@@ -6,6 +6,7 @@
 <title>Pit Wall · Live F1 race intelligence</title>
 <meta name="description" content="Pit Wall: live F1 track position, timing, team radio, pit-stop simulator, strategy and race analytics.">
 <meta name="theme-color" content="#0b0a0f">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b0a0f'/%3E%3Cpath d='M4 22 L13 7 L18 15 L22 10 L28 22' fill='none' stroke='%23cdb2ff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='28' cy='22' r='2.5' fill='%23ff3b4a'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <style>
@@ -136,15 +137,73 @@ select{background:var(--panel2);color:var(--txt);border:1px solid var(--line);bo
 .up{color:var(--green)}.dn{color:#ff6b78}
 .hidden{display:none!important}
 footer{color:var(--dim);font-size:11.5px;padding:0 22px 26px;max-width:1800px;margin:auto}
+/* responsive & component additions */
+.age-cell{font-size:13px;font-weight:700}.age-cell .age-lbl{font-size:10px;color:var(--mut);margin-left:1px;font-weight:600}
+.age-cell.wear-alert{color:#ff8f9c}.age-cell.wear-alert .age-lbl{color:#ff8f9c}
+.tag.drs{background:rgba(0,229,255,.16);color:#00e5ff;border:1px solid rgba(0,229,255,.35);box-shadow:0 0 8px rgba(0,229,255,.25);font-weight:800;font-size:9px;padding:1px 5px;border-radius:10px;letter-spacing:.05em}
+.pill.drs{border-color:#1a3a30;background:#0c1a15;color:#7ff0b0}.pill.drs.active i{background:#2fd67b;box-shadow:0 0 8px #2fd67b}.pill.drs.off{border-color:#2e1218;background:#180a0d;color:#888}.pill.drs.off i{background:#555;box-shadow:none}
+.sec .mono.p{color:#d8b4fe;font-weight:700;text-shadow:0 0 8px rgba(178,107,255,.45)}
+.sec .mono.g{color:#4ade80;font-weight:700;text-shadow:0 0 8px rgba(47,214,123,.35)}
+.sec .mono.y{color:#facc15}
+.radio-bar-ctrls{margin-left:auto;display:flex;align-items:center;gap:8px}
+.iconbtn-sm{width:28px;height:28px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);cursor:pointer;display:grid;place-items:center;font-size:13px;transition:.2s}
+.iconbtn-sm:hover{background:var(--line)}
+.vol-slider{width:75px;height:4px;accent-color:var(--acc)}
+.radio-actions{display:flex;align-items:center;gap:6px}
+.replay-btn{width:28px;height:28px;border-radius:50%;border:1px solid var(--line);background:var(--panel2);color:var(--mut);cursor:pointer;display:grid;place-items:center;font-size:14px;transition:.2s}
+.replay-btn:hover{color:var(--txt);border-color:var(--txt)}
+.radio-track{width:100%;height:3px;background:var(--line2);border-radius:3px;overflow:hidden;margin-top:5px;display:none}
+.radio-track.active{display:block}
+.radio-fill{height:100%;background:linear-gradient(90deg,var(--acc2),var(--acc));width:0%;border-radius:3px;transition:width 0.1s linear}
+.radio-time{font-size:10px;color:var(--acc);margin-top:3px;display:block}
+.pop{position:absolute;right:0;top:46px;background:var(--panel2);border:1px solid var(--line);border-radius:16px;padding:18px;width:280px;z-index:40;text-align:left;font-size:13px;color:var(--txt);display:none;box-shadow:0 24px 60px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.06);backdrop-filter:blur(16px)}
+.pop.on{display:block}
+.pop-title b{font-size:15px;font-weight:700;color:var(--txt);display:block;margin-bottom:12px}
+.pop-group{margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line2)}
+.pop-group:last-child{margin-bottom:0;padding-bottom:0;border-bottom:0}
+.pop-label{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--mut);margin-bottom:6px}
+.seg-sm button{padding:4px 14px;font-size:11.5px}
+.vol-row,.delay-row{display:flex;align-items:center;gap:10px;margin-top:4px}
+.telem-controls{display:flex;align-items:center;gap:14px;padding:14px 18px;flex-wrap:wrap;background:var(--panel2);border-bottom:1px solid var(--line)}
+.drv-picker{display:flex;flex-direction:column;gap:4px}
+.drv-select{min-width:180px;background:#131118;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:6px 10px;font-size:13px;font-weight:600}
+.telem-canvas-wrap{position:relative;width:100%;height:460px;background:#131118;border-bottom:1px solid var(--line)}
+#telemetryCanvas{width:100%;height:100%;display:block}
+.apex-table td,.apex-table th{padding:7px 10px}
+.apex-table tbody tr{cursor:pointer}
+.sc-estimator-panel{padding:16px 18px}
+.sc-header{display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap}
+.sc-comparison-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:768px){.sc-comparison-grid{grid-template-columns:1fr}}
+.sc-card{border-radius:12px;padding:14px;background:var(--panel2);border:1px solid var(--line)}
+.hide-d{display:none}
 @media(max-width:1100px){
   .wrap{grid-template-columns:1fr;padding:10px}.grid2{grid-template-columns:1fr}
-  .col.trackcol{order:-1}
   .tabs{order:3;width:100%;margin:4px 0 0;overflow-x:auto}.tabs button{flex:1;padding:9px 8px}
   .top{flex-wrap:wrap;gap:10px;padding:10px 12px}.title{min-width:0;flex:1}.title .m{font-size:16px}
   .pill.track{display:none}.stats{gap:20px;padding:10px 12px}.prog{width:110px}
-  .hide-m{display:none}td{padding:3px 6px}th{padding:8px 6px}
+  td{padding:3px 7px}th{padding:8px 7px}
   .bs div{flex-direction:column;align-items:flex-start;gap:4px;padding:10px}
   .kpi{grid-template-columns:1fr 1fr 1fr}.big{font-size:30px}
+}
+@media(max-width:680px){
+  .hide-d{display:flex}
+  .hide-m{display:none!important}
+  td{padding:3px 5px;font-size:12.5px}th{padding:7px 5px;font-size:9.5px}
+  .title .m{font-size:15px}
+  .stats{gap:12px;padding:8px 12px}
+  .stats .sp{display:none}
+  .prog{width:75px;height:5px}
+  .big{font-size:24px}
+  .mobile-subnav{display:flex;gap:6px;padding:8px 12px;overflow-x:auto;scrollbar-width:none;position:sticky;top:57px;z-index:25;background:rgba(11,10,15,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);margin:-4px -10px 10px}
+  .mobile-subnav button{background:var(--panel2);border:1px solid var(--line);color:var(--mut);font-size:11.5px;font-weight:700;padding:6px 13px;border-radius:20px;white-space:nowrap;cursor:pointer;transition:.2s}
+  .mobile-subnav button.on{background:var(--txt);color:#141118;border-color:var(--txt)}
+  body[data-mview="timing"] .col.trackcol{display:none!important}
+  body[data-mview="circuit"] #col-timing{display:none!important}
+  body[data-mview="circuit"] .grid2{display:none!important}
+  body[data-mview="radio"] #col-timing{display:none!important}
+  body[data-mview="radio"] #card-map{display:none!important}
+  body[data-mview="radio"] #card-best{display:none!important}
 }
 </style>
 </head>
@@ -154,12 +213,45 @@ footer{color:var(--dim);font-size:11.5px;padding:0 22px 26px;max-width:1800px;ma
     <div class="mark"><svg width="20" height="20" viewBox="0 0 20 20"><path d="M2 14 L8 4 L11 9 L14 6 L18 14" fill="none" stroke="#cdb2ff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
     <div class="title"><div class="m">Pit <em>Wall</em> · <span id="meeting">Live</span></div><div class="s" id="sesline">Connecting to live timing…</div></div>
   </div>
-  <nav class="tabs" id="tabs"><button class="on" data-tab="overview">Overview</button><button data-tab="strategy">Strategy</button><button data-tab="analysis">Analysis</button><button data-tab="season">Season</button></nav>
+  <nav class="tabs" id="tabs"><button class="on" data-tab="overview">Overview</button><button data-tab="telemetry">Telemetry</button><button data-tab="strategy">Strategy</button><button data-tab="analysis">Analysis</button><button data-tab="season">Season</button></nav>
   <div class="right">
+    <span class="pill drs active" id="drs-pill" title="DRS System Status"><i></i><span id="drstxt">DRS</span></span>
     <span class="pill" id="live"><i></i><span id="livetxt">OFFLINE</span></span>
     <span class="pill track" id="track">—</span>
     <button class="iconbtn" id="setbtn" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
-      <div class="pop" id="pop" onclick="event.stopPropagation()"><b>Stream delay</b>Hold data back to sync with your TV stream: <span class="mono" id="delayv">0s</span><input type="range" id="delay" min="0" max="60" value="0"></div></button>
+      <div class="pop" id="pop" onclick="event.stopPropagation()">
+        <div class="pop-title"><b>Pitwall Settings</b></div>
+        <div class="pop-group">
+          <div class="pop-label">Speed units</div>
+          <div class="seg seg-sm" id="seg-speed">
+            <button class="on" data-u="kmh">km/h</button>
+            <button data-u="mph">mph</button>
+          </div>
+        </div>
+        <div class="pop-group">
+          <div class="pop-label">Temperature units</div>
+          <div class="seg seg-sm" id="seg-temp">
+            <button class="on" data-u="C">°C</button>
+            <button data-u="F">°F</button>
+          </div>
+        </div>
+        <div class="pop-group">
+          <div class="pop-label">Team radio audio</div>
+          <div class="vol-row">
+            <button class="iconbtn-sm" id="pop-mute-btn" title="Toggle mute">🔊</button>
+            <input type="range" id="pop-vol-slider" min="0" max="1" step="0.05" value="0.8">
+            <span class="mono" id="pop-vol-val">80%</span>
+          </div>
+        </div>
+        <div class="pop-group">
+          <div class="pop-label">Stream delay (TV sync)</div>
+          <div class="delay-row">
+            <input type="range" id="delay" min="0" max="60" value="0">
+            <span class="mono" id="delayv">0s</span>
+          </div>
+          <small style="color:var(--dim);font-size:11px;display:block;margin-top:4px">Hold telemetry back to sync with broadcast delay.</small>
+        </div>
+      </div></button>
     <button class="iconbtn hide-m" id="fsbtn" title="Fullscreen" aria-label="Fullscreen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
   </div>
 </header>
@@ -175,9 +267,16 @@ footer{color:var(--dim);font-size:11.5px;padding:0 22px 26px;max-width:1800px;ma
   <span class="st"><small>Wind</small><span class="mono" id="wind">–</span></span>
 </div>
 
+<div class="mobile-subnav hide-d" id="mobile-subnav">
+  <button class="on" data-mview="all">All</button>
+  <button data-mview="timing">⏱ Timing</button>
+  <button data-mview="circuit">🗺 Circuit</button>
+  <button data-mview="radio">📻 Radio & RC</button>
+</div>
+
 <!-- OVERVIEW -->
 <section id="tab-overview" class="wrap">
-  <div class="col">
+  <div class="col" id="col-timing">
     <div class="card">
       <div class="ch"><h2>Live <em>timing</em></h2><span class="sub" id="ncars"></span>
         <div class="seg" id="gapmode"><button class="on" data-m="gap">Gap to leader</button><button data-m="int">Interval</button></div></div>
@@ -189,20 +288,81 @@ footer{color:var(--dim);font-size:11.5px;padding:0 22px 26px;max-width:1800px;ma
     </div>
   </div>
   <div class="col trackcol">
-    <div class="card">
+    <div class="card" id="card-map">
       <div class="ch"><h2>Track <em>position</em></h2><span class="sub" id="mapsub">Live circuit</span></div>
       <div class="mapbox"><svg id="map" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet"></svg>
         <div class="north" id="north"><svg width="14" height="18" viewBox="0 0 14 18"><path d="M7 0l6 16-6-4-6 4z" fill="#8d8898"/></svg><br>N</div></div>
       <div class="maplg"><span class="note">Positions estimated from live mini-sector timing</span><span><i style="background:var(--s1)"></i>S1</span><span><i style="background:var(--s2)"></i>S2</span><span><i style="background:var(--s3)"></i>S3</span></div>
       <div class="ins" id="ins"></div>
     </div>
-    <div class="card">
+    <div class="card" id="card-best">
       <div class="bs" id="bs" style="border-top:0"></div>
       <div class="lr" id="lr"></div>
     </div>
     <div class="grid2">
-      <div class="card"><div class="ch"><h2>Team <em>radio</em></h2><span class="sub">Latest first</span></div><div class="feed" id="radio"></div></div>
+      <div class="card"><div class="ch"><h2>Team <em>radio</em></h2><span class="sub" id="radio-sub">Latest first</span>
+        <div class="radio-bar-ctrls">
+          <button class="iconbtn-sm" id="btn-radio-mute" title="Toggle mute" aria-label="Toggle mute"><span id="mute-icon">🔊</span></button>
+          <input type="range" id="slider-radio-vol" min="0" max="1" step="0.05" value="0.8" class="vol-slider" title="Radio volume">
+        </div>
+      </div><div class="feed" id="radio"></div></div>
       <div class="card"><div class="ch"><h2>Race <em>control</em></h2></div><div class="feed" id="rc"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- TELEMETRY -->
+<section id="tab-telemetry" class="wrap hidden" style="grid-template-columns:1fr">
+  <div class="card">
+    <div class="ch">
+      <h2>Head-to-head <em>telemetry</em></h2>
+      <span class="sub">Multi-channel trace comparison: Speed, Running Delta (Δt), Throttle & Brake</span>
+      <div class="seg" id="telemPresets" style="margin-left:auto">
+        <button data-preset="p1p2">P1 vs P2</button>
+        <button data-preset="teammates">Teammates</button>
+        <button data-preset="fight">Closest fight</button>
+      </div>
+    </div>
+    <div class="telem-controls">
+      <div class="drv-picker">
+        <span class="eyebrow">Driver A (Reference)</span>
+        <select id="telemDrvA" class="drv-select"></select>
+      </div>
+      <button class="iconbtn" id="telemSwap" title="Swap drivers" style="align-self:flex-end;margin-bottom:2px">⇄</button>
+      <div class="drv-picker">
+        <span class="eyebrow">Driver B (Comparison)</span>
+        <select id="telemDrvB" class="drv-select"></select>
+      </div>
+      <div class="badge" id="telemBadge" style="margin-left:auto;background:rgba(47,214,123,.15);color:var(--green)">CALIBRATED TELEMETRY</div>
+    </div>
+    <div class="telem-canvas-wrap">
+      <canvas id="telemetryCanvas" width="1000" height="460"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ch">
+      <h2>Corner apex & mini-sector <em>matrix</em></h2>
+      <span class="sub" id="matrixSub">Turn-by-turn minimum apex speed and time delta (click row to scrub)</span>
+    </div>
+    <div class="scroll">
+      <table class="apex-table">
+        <thead>
+          <tr>
+            <th>Turn</th>
+            <th class="hide-m">Type</th>
+            <th>Dist</th>
+            <th class="r" id="thApexA">Driver A Apex</th>
+            <th class="r" id="thApexB">Driver B Apex</th>
+            <th class="r">Δ Speed</th>
+            <th class="r">Corner Δt</th>
+            <th>Advantage</th>
+          </tr>
+        </thead>
+        <tbody id="apexMatrixBody">
+          <tr><td colspan="8" class="empty">Select drivers above to compare corner telemetry.</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </section>
@@ -210,6 +370,21 @@ footer{color:var(--dim);font-size:11.5px;padding:0 22px 26px;max-width:1800px;ma
 <!-- STRATEGY -->
 <section id="tab-strategy" class="wrap hidden">
   <div class="col">
+    <div class="card">
+      <div class="ch">
+        <h2>SC / VSC delta <em>advantage</em></h2>
+        <span class="sub">Cheap pit stop opportunity & dirty air traffic window estimator</span>
+        <div class="seg" id="scModeSeg" style="margin-left:auto">
+          <button class="on" data-mode="auto">Auto (Live feed)</button>
+          <button data-mode="green">Green (~22s)</button>
+          <button data-mode="vsc">VSC (~15s)</button>
+          <button data-mode="sc">Safety Car (~12s)</button>
+        </div>
+      </div>
+      <div class="sc-estimator-panel">
+        <div class="sc-comparison-grid" id="scComparisonGrid"></div>
+      </div>
+    </div>
     <div class="card">
       <div class="ch"><h2>Pit stop <em>simulator</em></h2><span class="sub">Where would they rejoin if they pitted now?</span></div>
       <div class="sim">
@@ -258,6 +433,11 @@ footer{color:var(--dim);font-size:11.5px;padding:0 22px 26px;max-width:1800px;ma
 <script>
 const $ = (id) => document.getElementById(id);
 let S = {}, queue = [], delayMs = 0, gapMode = "gap", tab = "overview", season = null;
+let unitSpeed = localStorage.getItem("f1_unit_speed") || "kmh";
+let unitTemp = localStorage.getItem("f1_unit_temp") || "C";
+let radioVol = parseFloat(localStorage.getItem("f1_radio_vol") ?? "0.8");
+let radioMuted = localStorage.getItem("f1_radio_muted") === "true";
+let mobileView = "all";
 
 // ---------- helpers ----------
 function merge(base, patch) {
@@ -272,7 +452,7 @@ function merge(base, patch) {
 }
 const vals = (o) => o ? (Array.isArray(o) ? o : Object.keys(o).filter((k) => k !== "_kf").sort((a, b) => a - b).map((k) => o[k])) : [];
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-const cls = (x) => !x ? "" : x.OverallFastest ? "p" : x.PersonalFastest ? "g" : "";
+const cls = (x) => !x ? "" : x.OverallFastest ? "p" : x.PersonalFastest ? "g" : (x.Value ? "y" : "");
 const lapSecs = (v) => { if (!v) return 0; const p = String(v).split(":"); return p.length === 2 ? +p[0] * 60 + parseFloat(p[1]) : parseFloat(p[0]) || 0; };
 const fmtLap = (s) => { if (!s || !isFinite(s)) return "–"; const m = Math.floor(s / 60); return m + ":" + (s - m * 60).toFixed(3).padStart(6, "0"); };
 const utcDate = (u) => { if (!u) return null; const d = new Date(/Z|[+-]\d\d:?\d\d$/.test(u) ? u : u + "Z"); return isNaN(d) ? null : d; };
@@ -281,6 +461,30 @@ const col = (n) => "#" + (((S.DriverList || {})[n] || {}).TeamColour || "888");
 const tla = (n) => ((S.DriverList || {})[n] || {}).Tla || n;
 const lastName = (d) => { const n = d.LastName || (d.FullName || "").split(" ").slice(-1)[0] || ""; return n.charAt(0) + n.slice(1).toLowerCase(); };
 const isRace = () => /Race|Sprint/.test((S.SessionInfo || {}).Type || "");
+
+function fmtSpeed(kmh, suffix = true) {
+  if (kmh === null || kmh === undefined || kmh === "" || isNaN(kmh)) return "";
+  const n = parseFloat(kmh);
+  if (unitSpeed === "mph") {
+    const mph = Math.round(n * 0.621371);
+    return suffix ? mph + " mph" : String(mph);
+  }
+  return suffix ? Math.round(n) + " km/h" : String(Math.round(n));
+}
+
+function fmtTemp(celsius) {
+  if (celsius === null || celsius === undefined || celsius === "" || isNaN(celsius)) return "–";
+  const c = parseFloat(celsius);
+  if (unitTemp === "F") return (c * 9 / 5 + 32).toFixed(1) + "°F";
+  return c.toFixed(1) + "°C";
+}
+
+function fmtSecs(s) {
+  if (!s || !isFinite(s)) return "0:00";
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${sec.toString().padStart(2, "0")}`;
+}
 
 // ---------- connection ----------
 let es, retryT;
@@ -310,14 +514,25 @@ function renderTop() {
   const live = isLive(); setLive(live, live ? "LIVE" : ((S.SessionStatus && S.SessionStatus.Status) || "OFFLINE").toUpperCase());
   const t = TRACK[(S.TrackStatus || {}).Status] || ["—", "", "", ""];
   Object.assign($("track").style, { background: t[1], color: t[2], borderColor: t[3] }); $("track").textContent = t[0];
+  
+  const drsPill = $("drs-pill");
+  if (drsPill) {
+    const isDrsDisabled = (S.TrackStatus && ["2", "4", "5", "6", "7"].includes(S.TrackStatus.Status)) || ((S.WeatherData || {}).Rainfall === "1");
+    drsPill.className = "pill drs " + (isDrsDisabled ? "off" : "active");
+    $("drstxt").textContent = isDrsDisabled ? "DRS DISABLED" : "DRS ENABLED";
+  }
+
   const lc = S.LapCount;
   $("lapbig").innerHTML = lc ? `LAP <b>${lc.CurrentLap}<span style="color:var(--dim);font-size:18px"> / ${lc.TotalLaps}</span></b>` : `<b style="font-size:18px">${esc(si.Name || "Session")}</b>`;
   $("prog").style.width = lc ? Math.min(100, lc.CurrentLap / lc.TotalLaps * 100) + "%" : "0%";
   const w = S.WeatherData;
   if (w) {
-    $("ttemp").textContent = w.TrackTemp + "°C"; $("atemp").textContent = w.AirTemp + "°C"; $("hum").textContent = Math.round(w.Humidity) + "%";
+    $("ttemp").textContent = fmtTemp(w.TrackTemp);
+    $("atemp").textContent = fmtTemp(w.AirTemp);
+    $("hum").textContent = Math.round(w.Humidity) + "%";
     const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-    $("wind").textContent = (parseFloat(w.WindSpeed) * 3.6).toFixed(1) + " km/h " + dirs[Math.round((+w.WindDirection % 360) / 45) % 8] + (+w.Rainfall ? " · RAIN" : "");
+    const windSpeedKmh = parseFloat(w.WindSpeed) * 3.6;
+    $("wind").textContent = fmtSpeed(windSpeedKmh) + " " + dirs[Math.round((+w.WindDirection % 360) / 45) % 8] + (+w.Rainfall ? " · RAIN" : "");
   }
 }
 function tickClock() {
@@ -329,44 +544,221 @@ function tickClock() {
   }
   const off = (S.SessionInfo || {}).GmtOffset;
   if (off) { const [oh, om] = off.replace("-", "").split(":").map(Number); const sign = off.startsWith("-") ? -1 : 1;
-    $("ttime").textContent = new Date(Date.now() + sign * (oh * 60 + om) * 60000).toISOString().substr(11, 8); }
+    $("ttime").textContent = new Date(Date.now() + sign * (oh * 60 + om) * 60000).toISOString().slice(11, 19); }
 }
 setInterval(tickClock, 1000);
 
 // ---------- timing ----------
 const lines = () => (S.TimingData || {}).Lines || {};
-function gapOf(l) { if (l.GapToLeader !== undefined) return l.GapToLeader; if (l.TimeDiffToFastest !== undefined) return l.TimeDiffToFastest; const st = vals(l.Stats).filter(Boolean); return st.length ? st[st.length - 1].TimeDiffToFastest : ""; }
-function intOf(l) { if (l.IntervalToPositionAhead) return l.IntervalToPositionAhead.Value; if (l.TimeDiffToPositionAhead !== undefined) return l.TimeDiffToPositionAhead; return ""; }
+function gapOf(l) { if (!l) return ""; if (l.GapToLeader !== undefined) return l.GapToLeader; if (l.TimeDiffToFastest !== undefined) return l.TimeDiffToFastest; const st = vals(l.Stats).filter(Boolean); return st.length ? st[st.length - 1].TimeDiffToFastest : ""; }
+function intOf(l, i, nums, td) {
+  if (!l) return "";
+  if (l.IntervalToPositionAhead && l.IntervalToPositionAhead.Value) return l.IntervalToPositionAhead.Value;
+  if (l.TimeDiffToPositionAhead !== undefined && l.TimeDiffToPositionAhead !== "") return l.TimeDiffToPositionAhead;
+
+  const targetG = gapOf(l);
+  if (!targetG && (!l.LastLapTime || !l.LastLapTime.Value)) return "";
+
+  const numList = nums || order();
+  const linesData = td || lines();
+  const idx = i !== undefined ? i : numList.findIndex((k) => linesData[k] === l);
+  if (idx <= 0) return ""; // Leader has no car ahead
+
+  const currN = numList[idx];
+  const prevN = numList[idx - 1];
+  const currL = linesData[currN] || {};
+  const prevL = linesData[prevN] || {};
+
+  const currG = gapOf(currL);
+  if (!currG && !currL.LastLapTime) return "";
+
+  const currSecs = gapSecs(currN);
+  const prevSecs = gapSecs(prevN);
+  if (currSecs >= prevSecs && currSecs > 0) {
+    return "+" + (currSecs - prevSecs).toFixed(3);
+  }
+
+  const currLap = lapSecs(currL.LastLapTime && currL.LastLapTime.Value);
+  const prevLap = lapSecs(prevL.LastLapTime && prevL.LastLapTime.Value);
+  if (currLap > 0 && prevLap > 0 && currLap >= prevLap) {
+    return "+" + (currLap - prevLap).toFixed(3);
+  }
+  return "";
+}
 function order() { const td = lines(), dl = S.DriverList || {}; return Object.keys(td).filter((n) => dl[n]).sort((a, b) => (+td[a].Position || +td[a].Line || 99) - (+td[b].Position || +td[b].Line || 99)); }
 const avgLap = () => { const t = order().map((n) => lapSecs(lines()[n].LastLapTime && lines()[n].LastLapTime.Value)).filter((x) => x > 60).sort((a, b) => a - b); return t.length ? t[Math.floor(t.length / 2)] : 95; };
 function gapSecs(n) { // seconds behind leader, lapped cars converted with the median lap
-  const g = String(gapOf(lines()[n]) || ""); if (!g || /LAP/i.test(g)) return 0;
-  const m = g.match(/(\d+)\s*L/i); if (m) return +m[1] * avgLap() + 0.01 * (+lines()[n].Position || 0);
+  const l = lines()[n] || {};
+  const g = String(gapOf(l) || "");
+  if (!g) return 0;
+  const m = g.match(/(\d+)\s*L/i);
+  if (m) return +m[1] * avgLap() + 0.01 * (+l.Position || +l.Line || 0);
+  if (/LAP/i.test(g)) return avgLap() + 0.01 * (+l.Position || +l.Line || 0);
   return parseFloat(g.replace("+", "")) || 0;
 }
 function stintsOf(n) { return vals((((S.TimingAppData || {}).Lines || {})[n] || {}).Stints).filter(Boolean); }
+
+const towerCache = new Map();
+const WEAR_LIMITS = { SOFT: 18, MEDIUM: 26, HARD: 36, INTERMEDIATE: 22, WET: 25 };
+
 function renderTower() {
   const td = lines(), dl = S.DriverList || {}, nums = order();
-  if (!nums.length) { $("tower").innerHTML = `<tr><td colspan="10" class="empty">No session running. Timing appears here the moment a session goes live.</td></tr>`; return; }
+  const tbody = $("tower");
+  if (!nums.length) {
+    tbody.innerHTML = `<tr><td colspan="10" class="empty">No session running. Timing appears here the moment a session goes live.</td></tr>`;
+    towerCache.clear();
+    return;
+  }
+  if (tbody.querySelector(".empty")) tbody.innerHTML = "";
+
   $("ncars").textContent = nums.length + " drivers";
   $("gaph").textContent = gapMode === "gap" ? "Gap" : "Interval";
-  $("tower").innerHTML = nums.map((n, i) => {
-    const l = td[n], d = dl[n], st = stintsOf(n), cur = st[st.length - 1] || {};
+
+  const seen = new Set(nums);
+
+  nums.forEach((n, i) => {
+    const l = td[n] || {}, d = dl[n] || {}, st = stintsOf(n), cur = st[st.length - 1] || {};
     const comp = (cur.Compound || "UNKNOWN").toUpperCase(), lead = i === 0;
-    const raw = gapMode === "gap" ? gapOf(l) : intOf(l);
+    const raw = gapMode === "gap" ? gapOf(l) : intOf(l, i, nums, td);
     const gap = lead ? (isRace() ? "LEADER" : "") : (raw || "");
     const tag = l.Retired ? '<span class="tag r">OUT</span>' : l.KnockedOut ? '<span class="tag r">KO</span>' : l.InPit ? '<span class="tag">PIT</span>' : l.PitOut ? '<span class="tag">OUT LAP</span>' : "";
+    
+    let drsAvail = false;
+    if (isRace() && i > 0 && !l.InPit && !l.Retired && !l.Stopped) {
+      const prevN = nums[i - 1];
+      const deltaSecs = gapSecs(n) - gapSecs(prevN);
+      if (deltaSecs > 0 && deltaSecs <= 1.0) drsAvail = true;
+    }
+    const drsTag = drsAvail ? '<span class="tag drs">DRS</span>' : '';
+
     const sp = l.Speeds && (l.Speeds.ST && l.Speeds.ST.Value ? l.Speeds.ST : l.Speeds.FL);
-    const secs = [0, 1, 2].map((k) => { const sc = vals(l.Sectors)[k] || {}; return `<td class="sec hide-m"><span class="mono ${cls(sc)}">${esc(sc.Value || "")}</span><div class="ms">${vals(sc.Segments).map((g) => `<i class="m${g && g.Status}"></i>`).join("")}</div></td>`; }).join("");
-    return `<tr class="${lead ? "lead" : ""} ${l.Retired || l.Stopped ? "out" : ""}">
-      <td class="pos mono">${esc(l.Position || d.Line)}${lead ? '<span class="crown">♛</span>' : ""}</td>
-      <td><div class="drv"><span class="tb" style="background:#${esc(d.TeamColour || "666")}"></span><span class="tla">${esc(d.Tla)}</span><span class="ln hide-m">${esc(lastName(d))}</span>${tag}</div></td>
-      <td class="mono gap ${lead ? "leader" : ""}">${esc(gap)}</td>
-      <td class="mono ${cls(l.LastLapTime)}">${esc(l.LastLapTime && l.LastLapTime.Value)}</td>${secs}
-      <td class="c"><span class="tyre ${comp}" title="${esc(comp)}">${comp[0]}</span></td>
-      <td class="c mono">${cur.TotalLaps ?? ""}</td>
-      <td class="r mono hide-m ${cls(sp)}">${esc(sp && sp.Value)}</td></tr>`;
-  }).join("");
+    const spVal = sp && sp.Value ? fmtSpeed(sp.Value, false) : "";
+    const isHighWear = (cur.TotalLaps || 0) > (WEAR_LIMITS[comp] || 32);
+
+    const posStr = String(l.Position || d.Line || "");
+    const lastLapVal = (l.LastLapTime && l.LastLapTime.Value) || "";
+    const lastLapCls = "mono " + cls(l.LastLapTime);
+
+    const s0 = vals(l.Sectors)[0] || {}, s1 = vals(l.Sectors)[1] || {}, s2 = vals(l.Sectors)[2] || {};
+    const s0Val = s0.Value || "", s1Val = s1.Value || "", s2Val = s2.Value || "";
+    const s0Cls = "mono " + cls(s0), s1Cls = "mono " + cls(s1), s2Cls = "mono " + cls(s2);
+    const s0Ms = vals(s0.Segments).map((g) => `<i class="m${g && g.Status}"></i>`).join("");
+    const s1Ms = vals(s1.Segments).map((g) => `<i class="m${g && g.Status}"></i>`).join("");
+    const s2Ms = vals(s2.Segments).map((g) => `<i class="m${g && g.Status}"></i>`).join("");
+
+    let row = towerCache.get(n);
+    if (!row) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="pos mono"></td>
+        <td><div class="drv"><span class="tb"></span><span class="tla"></span><span class="ln hide-m"></span><span class="tags-wrap"></span></div></td>
+        <td class="mono gap"></td>
+        <td class="mono last-lap"></td>
+        <td class="sec hide-m s1-cell"><span class="mono"></span><div class="ms"></div></td>
+        <td class="sec hide-m s2-cell"><span class="mono"></span><div class="ms"></div></td>
+        <td class="sec hide-m s3-cell"><span class="mono"></span><div class="ms"></div></td>
+        <td class="c tyre-cell"></td>
+        <td class="c mono age-cell"></td>
+        <td class="r mono hide-m trap-cell"></td>
+      `;
+      row = {
+        tr,
+        pos: tr.querySelector(".pos"),
+        tb: tr.querySelector(".tb"),
+        tla: tr.querySelector(".tla"),
+        ln: tr.querySelector(".ln"),
+        tagsWrap: tr.querySelector(".tags-wrap"),
+        gap: tr.querySelector(".gap"),
+        lastLap: tr.querySelector(".last-lap"),
+        s1Span: tr.querySelector(".s1-cell span"),
+        s1Ms: tr.querySelector(".s1-cell .ms"),
+        s2Span: tr.querySelector(".s2-cell span"),
+        s2Ms: tr.querySelector(".s2-cell .ms"),
+        s3Span: tr.querySelector(".s3-cell span"),
+        s3Ms: tr.querySelector(".s3-cell .ms"),
+        tyre: tr.querySelector(".tyre-cell"),
+        age: tr.querySelector(".age-cell"),
+        trap: tr.querySelector(".trap-cell"),
+        state: {}
+      };
+      row.tb.style.background = "#" + (d.TeamColour || "666");
+      row.tla.textContent = d.Tla || n;
+      row.ln.textContent = lastName(d);
+      towerCache.set(n, row);
+      tbody.appendChild(row.tr);
+    }
+
+    const trCls = (lead ? "lead " : "") + (l.Retired || l.Stopped ? "out " : "");
+    if (row.state.trCls !== trCls) { row.tr.className = trCls; row.state.trCls = trCls; }
+
+    const posHtml = esc(posStr) + (lead ? '<span class="crown">♛</span>' : "");
+    if (row.state.posHtml !== posHtml) { row.pos.innerHTML = posHtml; row.state.posHtml = posHtml; }
+
+    const tagsHtml = tag + drsTag;
+    if (row.state.tagsHtml !== tagsHtml) { row.tagsWrap.innerHTML = tagsHtml; row.state.tagsHtml = tagsHtml; }
+
+    if (row.state.gap !== gap || row.state.lead !== lead) {
+      row.gap.textContent = gap;
+      row.gap.className = "mono gap" + (lead ? " leader" : "");
+      row.state.gap = gap;
+      row.state.lead = lead;
+    }
+
+    if (row.state.lastLapVal !== lastLapVal || row.state.lastLapCls !== lastLapCls) {
+      row.lastLap.textContent = lastLapVal;
+      row.lastLap.className = lastLapCls;
+      row.state.lastLapVal = lastLapVal;
+      row.state.lastLapCls = lastLapCls;
+    }
+
+    if (row.state.s0Val !== s0Val || row.state.s0Cls !== s0Cls) { row.s1Span.textContent = s0Val; row.s1Span.className = s0Cls; row.state.s0Val = s0Val; row.state.s0Cls = s0Cls; }
+    if (row.state.s0Ms !== s0Ms) { row.s1Ms.innerHTML = s0Ms; row.state.s0Ms = s0Ms; }
+
+    if (row.state.s1Val !== s1Val || row.state.s1Cls !== s1Cls) { row.s2Span.textContent = s1Val; row.s2Span.className = s1Cls; row.state.s1Val = s1Val; row.state.s1Cls = s1Cls; }
+    if (row.state.s1Ms !== s1Ms) { row.s2Ms.innerHTML = s1Ms; row.state.s1Ms = s1Ms; }
+
+    if (row.state.s2Val !== s2Val || row.state.s2Cls !== s2Cls) { row.s3Span.textContent = s2Val; row.s3Span.className = s2Cls; row.state.s2Val = s2Val; row.state.s2Cls = s2Cls; }
+    if (row.state.s2Ms !== s2Ms) { row.s3Ms.innerHTML = s2Ms; row.state.s2Ms = s2Ms; }
+
+    const tyreHtml = `<span class="tyre ${comp}" title="${esc(comp)} · Stint ${st.length}">${comp[0]}</span>`;
+    if (row.state.tyreHtml !== tyreHtml) { row.tyre.innerHTML = tyreHtml; row.state.tyreHtml = tyreHtml; }
+
+    const lapsCount = cur.TotalLaps ?? "";
+    const ageHtml = lapsCount !== "" ? `<span class="age-num">${lapsCount}</span><span class="age-lbl">L</span>${cur.New === 'true' || cur.New === true ? '<span class="tag-new" title="New tyre set">★</span>' : ''}` : "";
+    const ageCls = "c mono age-cell" + (isHighWear ? " wear-alert" : "");
+    if (row.state.ageHtml !== ageHtml || row.state.ageCls !== ageCls) {
+      row.age.innerHTML = ageHtml;
+      row.age.className = ageCls;
+      row.state.ageHtml = ageHtml;
+      row.state.ageCls = ageCls;
+    }
+
+    const trapCls = "r mono hide-m " + cls(sp);
+    if (row.state.spVal !== spVal || row.state.trapCls !== trapCls) {
+      row.trap.textContent = spVal;
+      row.trap.className = trapCls;
+      row.state.spVal = spVal;
+      row.state.trapCls = trapCls;
+    }
+  });
+
+  let cursor = tbody.firstElementChild;
+  nums.forEach((n) => {
+    const row = towerCache.get(n);
+    if (!row) return;
+    if (cursor !== row.tr) {
+      tbody.insertBefore(row.tr, cursor);
+    } else {
+      cursor = cursor.nextElementSibling;
+    }
+  });
+
+  for (const [n, r] of towerCache.entries()) {
+    if (!seen.has(n)) {
+      r.tr.remove();
+      towerCache.delete(n);
+    }
+  }
 }
 document.querySelectorAll("#gapmode button").forEach((b) => b.onclick = () => {
   gapMode = b.dataset.m; document.querySelectorAll("#gapmode button").forEach((x) => x.classList.toggle("on", x === b)); renderTower();
@@ -392,7 +784,7 @@ function renderInsights() {
   const nums = order(), td = lines(), out = [];
   if (!nums.length) { $("ins").innerHTML = ""; return; }
   // closest fight
-  let fight = null; nums.forEach((n, i) => { if (!i) return; const v = parseFloat(String(intOf(td[n])).replace("+", "")); if (v > 0 && (!fight || v < fight[2])) fight = [nums[i - 1], n, v]; });
+  let fight = null; nums.forEach((n, i) => { if (!i) return; const v = parseFloat(String(intOf(td[n], i, nums, td)).replace("+", "")); if (v > 0 && (!fight || v < fight[2])) fight = [nums[i - 1], n, v]; });
   if (fight) out.push(["Closest fight", `${tla(fight[1])} → ${tla(fight[0])}`, `${fight[2].toFixed(3)}s${fight[2] < 1 ? " · DRS range" : ""} for P${td[fight[0]].Position}`]);
   // biggest mover
   const ta = (S.TimingAppData || {}).Lines || {}; let mv = null;
@@ -403,7 +795,7 @@ function renderInsights() {
   if (fz) out.push(["Quickest right now", tla(fz[0]), fmtLap(fz[1]) + " last lap"]);
   // top speed
   let tp = null; for (const [n, s] of Object.entries((S.TimingStats || {}).Lines || {})) { const v = +(s.BestSpeeds && s.BestSpeeds.ST && s.BestSpeeds.ST.Value); if (v && (!tp || v > tp[1])) tp = [n, v]; }
-  if (tp) out.push(["Top speed", tla(tp[0]), tp[1] + " km/h"]);
+  if (tp) out.push(["Top speed", tla(tp[0]), fmtSpeed(tp[1])]);
   $("ins").innerHTML = out.map((o) => `<div class="insc"><div class="eyebrow">${o[0]}</div><b>${esc(o[1])}</b><span>${esc(o[2])}</span></div>`).join("");
 }
 
@@ -416,22 +808,94 @@ function renderRC() {
     return `<div class="fi"><span class="fb" style="background:${c}"></span><span class="ft mono">${m.Lap ? "Lap " + m.Lap : ""}<br>${esc(localHM(m.Utc))}</span><span class="fm">${esc(m.Message)}</span></div>`;
   }).join("") : '<div class="empty">No messages yet</div>';
 }
+
 let audio = null, playing = null, radioKey = "";
+
+function applyAudioVolume() {
+  if (audio) audio.volume = radioMuted ? 0 : radioVol;
+  const icon = $("mute-icon");
+  if (icon) icon.textContent = radioMuted ? "🔇" : "🔊";
+  const slider = $("slider-radio-vol");
+  if (slider) slider.value = radioVol;
+  const popMute = $("pop-mute-btn");
+  if (popMute) popMute.textContent = radioMuted ? "🔇" : "🔊";
+  const popVol = $("pop-vol-slider");
+  if (popVol) popVol.value = radioVol;
+  const popVolv = $("pop-vol-val");
+  if (popVolv) popVolv.textContent = Math.round(radioVol * 100) + "%";
+}
+
+function startAudio(src, path) {
+  if (audio) {
+    audio.pause();
+    audio.ontimeupdate = null;
+    audio.onended = null;
+    audio.onerror = null;
+  }
+  audio = new Audio(src);
+  applyAudioVolume();
+  playing = path;
+  audio.play().catch(() => {});
+
+  audio.ontimeupdate = () => {
+    if (!audio || !audio.duration) return;
+    const activeRow = document.querySelector(`.ri[data-path="${CSS.escape(path)}"]`);
+    if (activeRow) {
+      const fill = activeRow.querySelector(".radio-fill");
+      if (fill) fill.style.width = ((audio.currentTime / audio.duration) * 100).toFixed(1) + "%";
+      const timeLbl = activeRow.querySelector(".radio-time");
+      if (timeLbl) timeLbl.textContent = `${fmtSecs(audio.currentTime)} / ${fmtSecs(audio.duration)}`;
+    }
+  };
+
+  audio.onended = () => {
+    playing = null;
+    renderRadio();
+  };
+
+  audio.onerror = () => {
+    playing = null;
+    renderRadio();
+  };
+
+  renderRadio();
+}
+
 function renderRadio() {
+  applyAudioVolume();
   const caps = vals((S.TeamRadio || {}).Captures).filter(Boolean).slice().reverse().slice(0, 25), dl = S.DriverList || {};
   const key = caps.map((c) => c.Path).join("|") + playing; if (key === radioKey) return; radioKey = key;
   const base = "https://livetiming.formula1.com/static/" + ((S.SessionInfo || {}).Path || "");
   $("radio").innerHTML = caps.length ? caps.map((c) => {
     const d = dl[c.RacingNumber] || {}, on = playing === c.Path;
     const wave = Array.from({ length: 22 }, (_, i) => `<i style="height:${4 + Math.abs(Math.sin(i * 1.7 + c.Path.length)) * 14}px;animation-delay:${i * 40}ms"></i>`).join("");
-    return `<div class="ri ${on ? "playing" : ""}"><span class="fb" style="height:34px;border-radius:2px;background:#${d.TeamColour || "666"}"></span><b>${esc(d.Tla || c.RacingNumber)}</b>
-      <div class="who"><b>${esc(d.FullName || "")}</b><span class="mono">${esc(localHM(c.Utc))}</span><div class="wave">${wave}</div></div>
-      <button class="play ${on ? "on" : ""}" data-src="${esc(base + c.Path)}" data-path="${esc(c.Path)}" aria-label="Play radio">${on ? "❚❚" : "▶"}</button></div>`;
+    return `<div class="ri ${on ? "playing" : ""}" data-path="${esc(c.Path)}">
+      <span class="fb" style="height:34px;border-radius:2px;background:#${d.TeamColour || "666"}"></span><b>${esc(d.Tla || c.RacingNumber)}</b>
+      <div class="who">
+        <b>${esc(d.FullName || "")}</b><span class="mono">${esc(localHM(c.Utc))}</span>
+        <div class="wave">${wave}</div>
+        <div class="radio-track ${on ? "active" : ""}"><div class="radio-fill" style="width:0%"></div></div>
+        <span class="radio-time mono">${on ? "0:00" : ""}</span>
+      </div>
+      <div class="radio-actions">
+        <button class="play ${on ? "on" : ""}" data-src="${esc(base + c.Path)}" data-path="${esc(c.Path)}" aria-label="Play radio">${on ? "❚❚" : "▶"}</button>
+        <button class="replay-btn" data-src="${esc(base + c.Path)}" data-path="${esc(c.Path)}" title="Replay" aria-label="Replay clip">↺</button>
+      </div>
+    </div>`;
   }).join("") : '<div class="empty">No radio clips yet this session</div>';
+
   $("radio").querySelectorAll(".play").forEach((b) => b.onclick = () => {
-    if (audio) audio.pause();
-    if (playing === b.dataset.path) { playing = null; renderRadio(); return; }
-    audio = new Audio(b.dataset.src); playing = b.dataset.path; audio.play().catch(() => {}); audio.onended = () => { playing = null; renderRadio(); }; renderRadio();
+    if (playing === b.dataset.path) {
+      if (audio) audio.pause();
+      playing = null;
+      renderRadio();
+      return;
+    }
+    startAudio(b.dataset.src, b.dataset.path);
+  });
+
+  $("radio").querySelectorAll(".replay-btn").forEach((b) => b.onclick = () => {
+    startAudio(b.dataset.src, b.dataset.path);
   });
 }
 
@@ -445,12 +909,37 @@ function sectorBounds() {
   if (best.every(isFinite)) { const t = best[0] + best[1] + best[2]; return [best[0] / t, (best[0] + best[1]) / t]; }
   return [1 / 3, 2 / 3];
 }
+
 async function loadCircuit() {
   const si = S.SessionInfo; if (!si || !si.Meeting || !si.Meeting.Circuit) return;
   const key = si.Meeting.Circuit.Key, year = (si.StartDate || "").slice(0, 4);
-  if (key === circuitKey) return; circuitKey = key;
+  if (key === circuitKey && track) return;
+  circuitKey = key;
+
+  const cacheKey = `f1_circuit_${key}_${year}`;
+  let d = null;
   try {
-    const d = await (await fetch(`/api/circuit?key=${key}&year=${year}`)).json(); if (!d.x) throw 0;
+    const raw = localStorage.getItem(cacheKey);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.x) && parsed.x.length > 0) d = parsed;
+    }
+  } catch {}
+
+  if (!d) {
+    try {
+      const res = await fetch(`/api/circuit?key=${key}&year=${year}`);
+      if (!res.ok) throw 0;
+      d = await res.json();
+      if (!d || !d.x) throw 0;
+      try { localStorage.setItem(cacheKey, JSON.stringify(d)); } catch {}
+    } catch (e) {
+      if (!track) $("map").innerHTML = `<text x="500" y="310" text-anchor="middle" fill="#666" font-size="15">Track map unavailable for this circuit</text>`;
+      return;
+    }
+  }
+
+  try {
     const rot = (d.rotation || 0) * Math.PI / 180, c = Math.cos(rot), sn = Math.sin(rot);
     const R = (x, y) => [x * c - y * sn, -(x * sn + y * c)];
     let pts = d.x.map((x, i) => R(x, d.y[i]));
@@ -465,8 +954,12 @@ async function loadCircuit() {
     track = { pts, cum, len, corners: (d.corners || []).map((k) => ({ n: k.n, p: T(R(k.x, k.y)) })) };
     $("north").style.transform = `rotate(${-(d.rotation || 0)}deg)`;
     drawTrack();
-  } catch (e) { $("map").innerHTML = `<text x="500" y="310" text-anchor="middle" fill="#666" font-size="15">Track map unavailable for this circuit</text>`; }
+    if (window.telemetryEngine) window.telemetryEngine.update();
+  } catch (e) {
+    if (!track) $("map").innerHTML = `<text x="500" y="310" text-anchor="middle" fill="#666" font-size="15">Track map unavailable for this circuit</text>`;
+  }
 }
+
 function pointAt(f) {
   const t = track, d = ((f % 1) + 1) % 1 * t.len; let lo = 0, hi = t.cum.length - 1;
   if (d >= t.cum[hi]) { const a = t.pts[hi], b = t.pts[0], k = (d - t.cum[hi]) / (t.len - t.cum[hi] || 1); return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k]; }
@@ -501,9 +994,24 @@ function drawTrack() {
     <g filter="url(#glow)" opacity=".95"><path class="trks" stroke="var(--s1)" d="${pathBetween(0, bounds[0])}"/><path class="trks" stroke="var(--s2)" d="${pathBetween(bounds[0], bounds[1])}"/><path class="trks" stroke="var(--s3)" d="${pathBetween(bounds[1], 1)}"/></g>
     ${corners}
     <g transform="translate(${a[0].toFixed(1)},${a[1].toFixed(1)}) rotate(${(ang * 180 / Math.PI + 90).toFixed(1)})">${chk}</g>
-    <g id="carsG"></g><g id="lblG"></g>`;
+    <g id="carsG"></g><g id="lblG"></g><g id="telemHighlightG"></g>`;
   cars = {};
 }
+
+window.highlightTrackPosition = function(frac) {
+  const g = $("telemHighlightG");
+  if (!g) return;
+  if (frac === null || frac === undefined || !track) {
+    g.innerHTML = "";
+    return;
+  }
+  const p = pointAt(frac);
+  g.innerHTML = `
+    <circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="18" fill="none" stroke="var(--acc)" stroke-width="2.5" class="pulse"/>
+    <circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="6" fill="var(--acc)"/>
+  `;
+};
+
 // fraction of the lap completed, from the mini-sectors reported so far
 function lapProgress(l) {
   const sec = vals(l.Sectors); if (sec.length !== 3) return null;
@@ -596,6 +1104,613 @@ function frame(now) {
 }
 requestAnimationFrame(frame);
 
+// =========================================================================
+// TELEMETRY COMPARISON ENGINE
+// =========================================================================
+
+class TelemetryEngine {
+  constructor(canvasId) {
+    this.canvas = document.getElementById(canvasId);
+    this.ctx = this.canvas ? this.canvas.getContext("2d") : null;
+    this.driverA = null;
+    this.driverB = null;
+    this.scrubberDist = null;
+    this.hoverActive = false;
+    this.profileA = null;
+    this.profileB = null;
+    this.deltaCurve = null;
+    this.trackLength = 5412;
+    this.initEvents();
+  }
+
+  update() {
+    this.populateDropdowns();
+    if (!this.driverA || !this.driverB) {
+      const ord = order();
+      if (ord.length >= 2) {
+        this.driverA = ord[0];
+        this.driverB = ord[1];
+        $("telemDrvA").value = this.driverA;
+        $("telemDrvB").value = this.driverB;
+      }
+    }
+    if (this.driverA && this.driverB) {
+      this.computeProfiles();
+      this.render();
+      this.renderMatrix();
+    }
+  }
+
+  populateDropdowns() {
+    const selA = $("telemDrvA"), selB = $("telemDrvB");
+    if (!selA || !selB) return;
+    const nums = order(), dl = S.DriverList || {}, td = lines();
+    if (!nums.length) return;
+    const curA = selA.value || this.driverA || nums[0];
+    const curB = selB.value || this.driverB || (nums[1] || nums[0]);
+
+    const optsA = nums.map((n) => `<option value="${n}" ${n === curA ? "selected" : ""}>P${td[n]?.Position || "?"} ${tla(n)} (${lastName(dl[n] || {})})</option>`).join("");
+    const optsB = nums.map((n) => `<option value="${n}" ${n === curB ? "selected" : ""}>P${td[n]?.Position || "?"} ${tla(n)} (${lastName(dl[n] || {})})</option>`).join("");
+
+    if (selA.dataset.k !== optsA) { selA.innerHTML = optsA; selA.dataset.k = optsA; }
+    if (selB.dataset.k !== optsB) { selB.innerHTML = optsB; selB.dataset.k = optsB; }
+  }
+
+  setDrivers(drA, drB) {
+    this.driverA = drA;
+    this.driverB = drB;
+    if ($("telemDrvA")) $("telemDrvA").value = drA;
+    if ($("telemDrvB")) $("telemDrvB").value = drB;
+    this.computeProfiles();
+    this.render();
+    this.renderMatrix();
+  }
+
+  initEvents() {
+    if (!this.canvas) return;
+    const c = this.canvas;
+    const handleMove = (e) => {
+      const rect = c.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const x = clientX - rect.left;
+      const leftMargin = 55, rightMargin = 20;
+      const graphW = rect.width - leftMargin - rightMargin;
+      const frac = Math.max(0, Math.min(1, (x - leftMargin) / Math.max(10, graphW)));
+      this.scrubberDist = frac * this.trackLength;
+      this.hoverActive = true;
+      this.render();
+      if (typeof window.highlightTrackPosition === "function") {
+        window.highlightTrackPosition(frac);
+      }
+    };
+    c.addEventListener("mousemove", handleMove);
+    c.addEventListener("touchmove", handleMove, { passive: true });
+    c.addEventListener("mouseleave", () => {
+      this.hoverActive = false;
+      this.render();
+      if (typeof window.highlightTrackPosition === "function") {
+        window.highlightTrackPosition(null);
+      }
+    });
+
+    if ($("telemDrvA")) {
+      $("telemDrvA").onchange = (e) => {
+        this.driverA = e.target.value;
+        this.computeProfiles();
+        this.render();
+        this.renderMatrix();
+      };
+    }
+    if ($("telemDrvB")) {
+      $("telemDrvB").onchange = (e) => {
+        this.driverB = e.target.value;
+        this.computeProfiles();
+        this.render();
+        this.renderMatrix();
+      };
+    }
+    if ($("telemSwap")) {
+      $("telemSwap").onclick = () => {
+        const tmp = this.driverA;
+        this.driverA = this.driverB;
+        this.driverB = tmp;
+        if ($("telemDrvA")) $("telemDrvA").value = this.driverA;
+        if ($("telemDrvB")) $("telemDrvB").value = this.driverB;
+        this.computeProfiles();
+        this.render();
+        this.renderMatrix();
+      };
+    }
+    document.querySelectorAll("#telemPresets button").forEach((btn) => {
+      btn.onclick = () => {
+        const ord = order(), dl = S.DriverList || {};
+        if (ord.length < 2) return;
+        const p = btn.dataset.preset;
+        if (p === "p1p2") {
+          this.setDrivers(ord[0], ord[1]);
+        } else if (p === "teammates") {
+          let teamPair = null;
+          const teams = {};
+          ord.forEach((n) => {
+            const tm = (dl[n]?.TeamName || "").toLowerCase();
+            if (tm) {
+              if (teams[tm]) teamPair = [teams[tm], n];
+              else teams[tm] = n;
+            }
+          });
+          if (teamPair) this.setDrivers(teamPair[0], teamPair[1]);
+          else this.setDrivers(ord[0], ord[1]);
+        } else if (p === "fight") {
+          let closest = null, minDiff = Infinity;
+          for (let i = 1; i < ord.length; i++) {
+            const diff = gapSecs(ord[i]) - gapSecs(ord[i - 1]);
+            if (diff > 0 && diff < minDiff) {
+              minDiff = diff;
+              closest = [ord[i - 1], ord[i]];
+            }
+          }
+          if (closest) this.setDrivers(closest[0], closest[1]);
+          else this.setDrivers(ord[0], ord[1]);
+        }
+      };
+    });
+  }
+
+  generateSyntheticProfile(driverNum) {
+    const td = lines()[driverNum] || {};
+    const st = (S.TimingStats || {}).Lines || {};
+    const driverStats = st[driverNum] || {};
+
+    const sectors = vals(td.Sectors);
+    const sTimes = sectors.map((sc) => lapSecs(sc && sc.Value));
+    const sBest = vals(driverStats.BestSectors).map((b) => parseFloat(b && b.Value) || 0);
+    const s1Time = sTimes[0] || sBest[0] || 28.5;
+    const s2Time = sTimes[1] || sBest[1] || 35.0;
+    const s3Time = sTimes[2] || sBest[2] || 26.5;
+
+    const trapSpeed = +(driverStats.BestSpeeds && driverStats.BestSpeeds.ST && driverStats.BestSpeeds.ST.Value) || 325;
+
+    const N = 1000;
+    const ds = this.trackLength / (N - 1);
+    const b = sectorBounds();
+    const s1EndDist = b[0] * this.trackLength;
+    const s2EndDist = b[1] * this.trackLength;
+
+    const corners = (track && track.corners && track.corners.length) ? track.corners : [
+      { n: 1 }, { n: 2 }, { n: 3 }, { n: 4 }, { n: 5 }, { n: 6 }, { n: 7 }, { n: 8 },
+      { n: 9 }, { n: 10 }, { n: 11 }, { n: 12 }, { n: 13 }, { n: 14 }, { n: 15 }, { n: 16 }
+    ];
+
+    const cornerApexes = corners.map((k, idx) => {
+      const radius = 35 + ((idx * 37) % 150);
+      const baseApex = Math.sqrt(3.6 * 9.81 * radius) * 3.6;
+      const apexSpeed = Math.max(72, Math.min(265, baseApex));
+      const dist = (idx / corners.length) * this.trackLength;
+      return { idx, dist, apexSpeed: apexSpeed / 3.6 };
+    });
+
+    const vRaw = new Float64Array(N);
+    const maxSpeed = (trapSpeed + 5) / 3.6;
+
+    for (let i = 0; i < N; i++) vRaw[i] = maxSpeed;
+    cornerApexes.forEach((ap) => {
+      const apIdx = Math.round((ap.dist / this.trackLength) * (N - 1));
+      if (apIdx >= 0 && apIdx < N) vRaw[apIdx] = Math.min(vRaw[apIdx], ap.apexSpeed);
+    });
+
+    const aBrake = 42.0;
+    for (let iter = 0; iter < 2; iter++) {
+      for (let i = N - 1; i > 0; i--) {
+        const vLimit = Math.sqrt(vRaw[i] * vRaw[i] + 2 * aBrake * ds);
+        if (vLimit < vRaw[i - 1]) vRaw[i - 1] = vLimit;
+      }
+      const vWrap = Math.sqrt(vRaw[0] * vRaw[0] + 2 * aBrake * ds);
+      if (vWrap < vRaw[N - 1]) vRaw[N - 1] = vWrap;
+
+      const aAcc = 9.8;
+      for (let i = 0; i < N - 1; i++) {
+        const vLimit = Math.sqrt(vRaw[i] * vRaw[i] + 2 * aAcc * ds);
+        if (vLimit < vRaw[i + 1]) vRaw[i + 1] = vLimit;
+      }
+    }
+
+    let t1Calc = 0, t2Calc = 0, t3Calc = 0;
+    for (let i = 0; i < N; i++) {
+      const s = i * ds;
+      const dt = ds / Math.max(15, vRaw[i]);
+      if (s <= s1EndDist) t1Calc += dt;
+      else if (s <= s2EndDist) t2Calc += dt;
+      else t3Calc += dt;
+    }
+
+    const scale1 = t1Calc / Math.max(10, s1Time);
+    const scale2 = t2Calc / Math.max(10, s2Time);
+    const scale3 = t3Calc / Math.max(10, s3Time);
+
+    const speedKmh = new Float32Array(N);
+    const throttle = new Float32Array(N);
+    const brake = new Float32Array(N);
+    const gear = new Uint8Array(N);
+    const cumTime = new Float64Array(N);
+
+    let timeAcc = 0;
+    for (let i = 0; i < N; i++) {
+      const s = i * ds;
+      const sc = s <= s1EndDist ? scale1 : s <= s2EndDist ? scale2 : scale3;
+      const vMs = vRaw[i] * sc;
+      speedKmh[i] = vMs * 3.6;
+      timeAcc += ds / Math.max(15, vMs);
+      cumTime[i] = timeAcc;
+
+      const k = speedKmh[i];
+      gear[i] = k < 90 ? 2 : k < 130 ? 3 : k < 170 ? 4 : k < 210 ? 5 : k < 255 ? 6 : k < 295 ? 7 : 8;
+
+      const prevV = i > 0 ? (speedKmh[i - 1] / 3.6) : (speedKmh[0] / 3.6);
+      const nextV = i < N - 1 ? (speedKmh[i + 1] / 3.6) : (speedKmh[N - 1] / 3.6);
+      const accel = (nextV * nextV - prevV * prevV) / (4 * ds);
+
+      if (accel < -1.5) {
+        brake[i] = Math.min(100, Math.round((Math.abs(accel) / 38) * 100));
+        throttle[i] = 0;
+      } else if (accel > 0.4) {
+        throttle[i] = Math.min(100, Math.round(20 + (accel / 10) * 80));
+        brake[i] = 0;
+      } else {
+        throttle[i] = 10;
+        brake[i] = 0;
+      }
+    }
+
+    return { driverNum, speedKmh, throttle, brake, gear, cumTime, ds, N };
+  }
+
+  computeProfiles() {
+    if (!this.driverA || !this.driverB) return;
+    this.profileA = this.generateSyntheticProfile(this.driverA);
+    this.profileB = this.generateSyntheticProfile(this.driverB);
+
+    const N = this.profileA.N;
+    this.deltaCurve = new Float32Array(N);
+    for (let i = 0; i < N; i++) {
+      this.deltaCurve[i] = this.profileB.cumTime[i] - this.profileA.cumTime[i];
+    }
+  }
+
+  render() {
+    if (!this.ctx || !this.canvas || !this.profileA || !this.profileB) return;
+    const ctx = this.ctx;
+    const rect = this.canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const dpr = window.devicePixelRatio || 1;
+    this.canvas.width = rect.width * dpr;
+    this.canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+
+    const W = rect.width;
+    const H = rect.height;
+    const leftMargin = 55;
+    const rightMargin = 20;
+    const graphW = W - leftMargin - rightMargin;
+
+    ctx.fillStyle = "#131118";
+    ctx.fillRect(0, 0, W, H);
+
+    const ySpeedTop = 24, ySpeedH = 180;
+    const yDeltaTop = 224, yDeltaH = 85;
+    const yPedalTop = 329, yPedalH = 75;
+
+    const colA = col(this.driverA);
+    const colB = col(this.driverB);
+
+    this.drawSpeedChannel(ctx, leftMargin, ySpeedTop, graphW, ySpeedH, colA, colB);
+    this.drawDeltaChannel(ctx, leftMargin, yDeltaTop, graphW, yDeltaH, colA, colB);
+    this.drawPedalChannel(ctx, leftMargin, yPedalTop, graphW, yPedalH, colA, colB);
+    this.drawTrackMarkers(ctx, leftMargin, 16, graphW, H - 24);
+
+    if (this.hoverActive && this.scrubberDist !== null) {
+      this.drawScrubber(ctx, leftMargin, graphW, ySpeedTop, ySpeedH, yDeltaTop, yDeltaH, yPedalTop, yPedalH, colA, colB);
+    }
+  }
+
+  drawSpeedChannel(ctx, x0, y0, w, h, colA, colB) {
+    ctx.strokeStyle = "#26232e";
+    ctx.lineWidth = 1;
+    ctx.fillStyle = "#5f5a69";
+    ctx.font = "10px 'JetBrains Mono', monospace";
+    ctx.textAlign = "right";
+
+    const isMph = unitSpeed === "mph";
+    const gridSpeeds = isMph ? [60, 120, 180] : [100, 200, 300];
+    const maxScaleSpeed = isMph ? 220 : 360;
+    const minScaleSpeed = isMph ? 35 : 50;
+
+    gridSpeeds.forEach((spd) => {
+      const y = y0 + h - ((spd - minScaleSpeed) / (maxScaleSpeed - minScaleSpeed)) * h;
+      ctx.beginPath();
+      ctx.moveTo(x0, y);
+      ctx.lineTo(x0 + w, y);
+      ctx.stroke();
+      ctx.fillText(spd + (isMph ? " mph" : " km/h"), x0 - 8, y + 3);
+    });
+
+    const N = this.profileA.N;
+    const mapY = (spdKmh) => {
+      const val = isMph ? spdKmh * 0.621371 : spdKmh;
+      return y0 + h - ((val - minScaleSpeed) / (maxScaleSpeed - minScaleSpeed)) * h;
+    };
+
+    // Driver B
+    ctx.strokeStyle = colB;
+    ctx.lineWidth = 2.0;
+    ctx.beginPath();
+    for (let i = 0; i < N; i++) {
+      const x = x0 + (i / (N - 1)) * w;
+      const y = mapY(this.profileB.speedKmh[i]);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Driver A
+    ctx.strokeStyle = colA;
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    for (let i = 0; i < N; i++) {
+      const x = x0 + (i / (N - 1)) * w;
+      const y = mapY(this.profileA.speedKmh[i]);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  drawDeltaChannel(ctx, x0, y0, w, h, colA, colB) {
+    const midY = y0 + h / 2;
+    ctx.strokeStyle = "#3a3644";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(x0, midY);
+    ctx.lineTo(x0 + w, midY);
+    ctx.stroke();
+
+    ctx.fillStyle = "#8d8898";
+    ctx.font = "10px 'JetBrains Mono', monospace";
+    ctx.textAlign = "right";
+    ctx.fillText("0.0s", x0 - 8, midY + 3);
+    ctx.fillText("+0.5s", x0 - 8, y0 + 12);
+    ctx.fillText("-0.5s", x0 - 8, y0 + h - 4);
+
+    const N = this.profileA.N;
+    const maxDelta = 0.8;
+    const mapY = (dt) => midY - (dt / maxDelta) * (h / 2);
+
+    ctx.strokeStyle = "#cdb2ff";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let i = 0; i < N; i++) {
+      const x = x0 + (i / (N - 1)) * w;
+      const y = Math.max(y0, Math.min(y0 + h, mapY(this.deltaCurve[i])));
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  drawPedalChannel(ctx, x0, y0, w, h, colA, colB) {
+    ctx.fillStyle = "#5f5a69";
+    ctx.font = "10px 'JetBrains Mono', monospace";
+    ctx.textAlign = "right";
+    ctx.fillText("100%", x0 - 8, y0 + 10);
+    ctx.fillText("0%", x0 - 8, y0 + h);
+
+    const N = this.profileA.N;
+    // Driver A Throttle
+    ctx.strokeStyle = colA;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    for (let i = 0; i < N; i++) {
+      const x = x0 + (i / (N - 1)) * w;
+      const y = y0 + h - (this.profileA.throttle[i] / 100) * h;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Driver A Brake (crimson bars)
+    ctx.fillStyle = "rgba(255, 59, 74, 0.4)";
+    for (let i = 0; i < N; i++) {
+      if (this.profileA.brake[i] > 10) {
+        const x = x0 + (i / (N - 1)) * w;
+        ctx.fillRect(x, y0 + h - 14, Math.max(1, w / N + 1), 14);
+      }
+    }
+  }
+
+  drawTrackMarkers(ctx, x0, y0, w, totalH) {
+    const corners = (track && track.corners && track.corners.length) ? track.corners : [
+      { n: 1 }, { n: 2 }, { n: 3 }, { n: 4 }, { n: 5 }, { n: 6 }, { n: 7 }, { n: 8 },
+      { n: 9 }, { n: 10 }, { n: 11 }, { n: 12 }, { n: 13 }, { n: 14 }, { n: 15 }, { n: 16 }
+    ];
+    ctx.strokeStyle = "rgba(95, 90, 105, 0.25)";
+    ctx.fillStyle = "#8d8898";
+    ctx.font = "9px Inter, sans-serif";
+    ctx.textAlign = "center";
+
+    corners.forEach((k, idx) => {
+      const frac = idx / corners.length;
+      const x = x0 + frac * w;
+      ctx.beginPath();
+      ctx.moveTo(x, y0 + 8);
+      ctx.lineTo(x, y0 + totalH);
+      ctx.stroke();
+      ctx.fillText("T" + k.n, x, y0 + 5);
+    });
+  }
+
+  drawScrubber(ctx, x0, w, ySpd, hSpd, yDlt, hDlt, yPdl, hPdl, colA, colB) {
+    const frac = this.scrubberDist / this.trackLength;
+    const x = x0 + frac * w;
+    const idx = Math.min(this.profileA.N - 1, Math.max(0, Math.round(frac * (this.profileA.N - 1))));
+
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.65)";
+    ctx.lineWidth = 1.2;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.moveTo(x, ySpd);
+    ctx.lineTo(x, yPdl + hPdl);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    const isMph = unitSpeed === "mph";
+    const maxScaleSpeed = isMph ? 220 : 360;
+    const minScaleSpeed = isMph ? 35 : 50;
+    const mapSpdY = (spdKmh) => {
+      const val = isMph ? spdKmh * 0.621371 : spdKmh;
+      return ySpd + hSpd - ((val - minScaleSpeed) / (maxScaleSpeed - minScaleSpeed)) * hSpd;
+    };
+
+    const ySpdA = mapSpdY(this.profileA.speedKmh[idx]);
+    const ySpdB = mapSpdY(this.profileB.speedKmh[idx]);
+
+    ctx.fillStyle = colA;
+    ctx.beginPath(); ctx.arc(x, ySpdA, 4.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = colB;
+    ctx.beginPath(); ctx.arc(x, ySpdB, 4.5, 0, Math.PI * 2); ctx.fill();
+
+    const vA = isMph ? Math.round(this.profileA.speedKmh[idx] * 0.621371) + " mph" : Math.round(this.profileA.speedKmh[idx]) + " km/h";
+    const vB = isMph ? Math.round(this.profileB.speedKmh[idx] * 0.621371) + " mph" : Math.round(this.profileB.speedKmh[idx]) + " km/h";
+    const dt = this.deltaCurve[idx];
+    const thrA = this.profileA.throttle[idx];
+    const thrB = this.profileB.throttle[idx];
+
+    const hudText = `${Math.round(this.scrubberDist)}m · ${tla(this.driverA)}: ${vA} (T:${thrA}%) | ${tla(this.driverB)}: ${vB} (T:${thrB}%) | Δt: ${dt > 0 ? "+" : ""}${dt.toFixed(3)}s`;
+    ctx.fillStyle = "rgba(20, 17, 24, 0.94)";
+    ctx.strokeStyle = "#3a3147";
+    ctx.lineWidth = 1;
+    const tw = ctx.measureText(hudText).width + 24;
+    const hudX = Math.max(x0, Math.min(x0 + w - tw, x - tw / 2));
+    ctx.fillRect(hudX, 4, tw, 22);
+    ctx.strokeRect(hudX, 4, tw, 22);
+
+    ctx.fillStyle = "#fff";
+    ctx.font = "11px 'JetBrains Mono', monospace";
+    ctx.textAlign = "left";
+    ctx.fillText(hudText, hudX + 12, 19);
+  }
+
+  renderMatrix() {
+    const el = $("apexMatrixBody");
+    if (!el || !this.profileA || !this.profileB) return;
+    const corners = (track && track.corners && track.corners.length) ? track.corners : [
+      { n: 1 }, { n: 2 }, { n: 3 }, { n: 4 }, { n: 5 }, { n: 6 }, { n: 7 }, { n: 8 },
+      { n: 9 }, { n: 10 }, { n: 11 }, { n: 12 }, { n: 13 }, { n: 14 }, { n: 15 }, { n: 16 }
+    ];
+    const N = this.profileA.N;
+
+    const thA = $("thApexA"), thB = $("thApexB");
+    if (thA) thA.textContent = `${tla(this.driverA)} Apex`;
+    if (thB) thB.textContent = `${tla(this.driverB)} Apex`;
+
+    const isMph = unitSpeed === "mph";
+
+    const rows = corners.map((k, idx) => {
+      const frac = idx / corners.length;
+      const dist = Math.round(frac * this.trackLength);
+      const cIdx = Math.round(frac * (N - 1));
+
+      let minA = 999, minB = 999;
+      for (let w = Math.max(0, cIdx - 15); w <= Math.min(N - 1, cIdx + 15); w++) {
+        if (this.profileA.speedKmh[w] < minA) minA = this.profileA.speedKmh[w];
+        if (this.profileB.speedKmh[w] < minB) minB = this.profileB.speedKmh[w];
+      }
+      const rawA = Math.round(minA);
+      const rawB = Math.round(minB);
+      const spdA = isMph ? Math.round(rawA * 0.621371) : rawA;
+      const spdB = isMph ? Math.round(rawB * 0.621371) : rawB;
+      const dSpd = spdA - spdB;
+      const dt = this.deltaCurve[cIdx];
+      const faster = dSpd > 0 ? tla(this.driverA) : dSpd < 0 ? tla(this.driverB) : "—";
+      const fasterCol = dSpd > 0 ? col(this.driverA) : dSpd < 0 ? col(this.driverB) : "#8d8898";
+
+      return `<tr onclick="window.telemetryEngine.scrubTo(${dist})">
+        <td class="mono font-bold">T${k.n}</td>
+        <td class="hide-m text-muted">${rawA < 110 ? "Hairpin" : rawA < 190 ? "Medium" : "Fast"}</td>
+        <td class="mono text-muted">${dist}m</td>
+        <td class="r mono">${spdA}</td>
+        <td class="r mono">${spdB}</td>
+        <td class="r mono" style="color:${dSpd > 0 ? "var(--green)" : dSpd < 0 ? "#ff6b78" : "inherit"}">${dSpd > 0 ? "+" + dSpd : dSpd}</td>
+        <td class="r mono">${dt > 0 ? "+" + dt.toFixed(3) : dt.toFixed(3)}s</td>
+        <td><span class="chip" style="background:${fasterCol};font-size:10px;padding:2px 7px">${faster}</span></td>
+      </tr>`;
+    }).join("");
+
+    el.innerHTML = rows;
+  }
+
+  scrubTo(distMeters) {
+    this.scrubberDist = distMeters;
+    this.hoverActive = true;
+    this.render();
+    if (typeof window.highlightTrackPosition === "function") {
+      window.highlightTrackPosition(distMeters / this.trackLength);
+    }
+  }
+}
+
+// ---------- SC / VSC Delta Advantage Estimator ----------
+let scMode = "auto";
+
+function renderScDeltaEstimator() {
+  const container = $("scComparisonGrid");
+  if (!container) return;
+
+  const activeDrivers = order().filter((n) => !lines()[n].Retired && !lines()[n].Stopped);
+  if (!activeDrivers.length) {
+    container.innerHTML = '<div class="empty">Safety car estimator active during live sessions.</div>';
+    return;
+  }
+
+  const targetDrv = simDrv || activeDrivers[0];
+  const g = Object.fromEntries(activeDrivers.map((n) => [n, gapSecs(n)]));
+  const myGap = g[targetDrv] || 0;
+  const curPos = +lines()[targetDrv]?.Position || 1;
+
+  const scenarios = [
+    { name: "Green Flag", loss: 22.0, tag: "NORMAL PIT", color: "#8d8898" },
+    { name: "Virtual SC (VSC)", loss: 15.0, tag: "SAVE ~7.0s", color: "#ffe066" },
+    { name: "Safety Car (SC)", loss: 12.0, tag: "SAVE ~10.0s", color: "#ffb27a" },
+  ];
+
+  const cards = scenarios.map((sc) => {
+    const reGap = myGap + sc.loss;
+    const ahead = activeDrivers.filter((n) => n !== targetDrv && g[n] <= reGap);
+    const behind = activeDrivers.filter((n) => n !== targetDrv && g[n] > reGap);
+    const newPos = ahead.length + 1;
+    const placesLost = newPos - curPos;
+    const carAhead = ahead[ahead.length - 1];
+    const carBehind = behind[0];
+    const gapToAhead = carAhead ? (reGap - g[carAhead]).toFixed(1) : null;
+    const gapToBehind = carBehind ? (g[carBehind] - reGap).toFixed(1) : null;
+
+    const isFree = placesLost <= 0;
+    const risk = gapToAhead && parseFloat(gapToAhead) < 1.0 ? "DIRTY AIR TRAFFIC" : "CLEAN AIR WINDOW";
+
+    return `<div class="sc-card" style="border-top:3px solid ${sc.color};background:var(--panel2);border-radius:12px;padding:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <b>${sc.name}</b>
+        <span class="badge" style="background:${sc.color}22;color:${sc.color}">${sc.tag}</span>
+      </div>
+      <div style="font-size:24px;font-weight:700;margin:10px 0">
+        P${curPos} → <span style="color:${isFree ? "var(--green)" : "var(--acc)"}">P${newPos}</span>
+        <small style="font-size:12px;color:var(--mut);font-weight:400">(${placesLost > 0 ? "+" + placesLost : placesLost} places)</small>
+      </div>
+      <div style="font-size:11.5px;color:var(--mut);line-height:1.6">
+        <div>Rejoins behind: <b>${carAhead ? tla(carAhead) + " (+" + gapToAhead + "s)" : "None (Leader)"}</b></div>
+        <div>Ahead of: <b>${carBehind ? tla(carBehind) + " (" + gapToBehind + "s)" : "None (Last)"}</b></div>
+        <div style="margin-top:6px">Traffic window: <span class="tag" style="background:${risk === 'CLEAN AIR WINDOW' ? '#1f3a2b' : '#3a1f24'};color:${risk === 'CLEAN AIR WINDOW' ? '#7ff0b0' : '#ff9aa5'}">${risk}</span></div>
+      </div>
+    </div>`;
+  }).join("");
+
+  container.innerHTML = cards;
+}
+
 // ---------- strategy ----------
 let simDrv = null, pitLoss = 22, lossTouched = false;
 function pitLaneMedian() {
@@ -603,30 +1718,41 @@ function pitLaneMedian() {
   return t.length ? t[Math.floor(t.length / 2)] : null;
 }
 function renderStrategy() {
+  renderScDeltaEstimator();
   const nums = order(), td = lines(); if (!nums.length) { $("simout").innerHTML = '<div class="empty">Strategy tools come alive during a session.</div>'; return; }
   const med = pitLaneMedian(); if (med && !lossTouched) { pitLoss = Math.round(med * 2) / 2; $("loss").value = pitLoss; }
   $("lossv").textContent = pitLoss.toFixed(1) + "s" + (med && !lossTouched ? " (median pit lane time)" : "");
   const sel = $("simdrv"); if (!simDrv || !td[simDrv]) simDrv = nums[Math.min(3, nums.length - 1)];
   const opts = nums.map((n) => `<option value="${n}" ${n === simDrv ? "selected" : ""}>P${td[n].Position} ${tla(n)}</option>`).join("");
   if (sel.dataset.k !== opts) { sel.innerHTML = opts; sel.dataset.k = opts; }
+  
   // pit simulator
-  const active = nums.filter((n) => !td[n].Retired && !td[n].Stopped);
-  const g = Object.fromEntries(active.map((n) => [n, gapSecs(n)]));
-  const me = g[simDrv] ?? 0, re = me + pitLoss;
-  const others = active.filter((n) => n !== simDrv).sort((a, b) => g[a] - g[b]);
-  const ahead = others.filter((n) => g[n] <= re), behind = others.filter((n) => g[n] > re);
-  const newPos = ahead.length + 1, curPos = +td[simDrv].Position, a = ahead[ahead.length - 1], b = behind[0];
-  $("simout").innerHTML = `<div class="big">P${curPos} <span style="color:var(--dim)">→</span> <em>P${newPos}</em></div>
-    <div class="kpi"><div><span class="eyebrow">Places lost</span><b class="${newPos > curPos ? "dn" : "up"}">${newPos - curPos}</b></div>
-    <div><span class="eyebrow">Rejoins behind</span><b>${a ? tla(a) + ` <span class="mono" style="font-size:13px;color:var(--mut)">+${(re - g[a]).toFixed(1)}s</span>` : "—"}</b></div>
-    <div><span class="eyebrow">Ahead of</span><b>${b ? tla(b) + ` <span class="mono" style="font-size:13px;color:var(--mut)">${(g[b] - re).toFixed(1)}s</span>` : "—"}</b></div></div>`;
-  // ribbon: everyone on a gap axis around the driver, ghost at rejoin
-  const lo = Math.max(0, me - 8), hi = re + 12, X = (s) => 3 + (s - lo) / (hi - lo) * 94;
-  $("ribbon").innerHTML = active.filter((n) => g[n] >= lo && g[n] <= hi).map((n) => `<div class="rb ${n === simDrv ? "me" : ""}" style="left:${X(g[n])}%"><i style="background:${col(n)}"></i>${tla(n)}</div>`).join("")
-    + `<div class="rb ghost" style="left:${X(re)}%"><i></i>${tla(simDrv)} after stop</div>`;
+  if (!isRace()) {
+    $("simout").innerHTML = `<div class="empty" style="padding:16px;background:var(--panel2);border-radius:12px;text-align:left;line-height:1.5">
+      <b>Qualifying Session Active</b><br>
+      <span style="color:var(--mut);font-size:12px">Pit stop delta simulator is optimized for race sessions. In qualifying, track evolution and out-lap traffic margin dictate session timing rather than a 22s pit delta.</span>
+    </div>`;
+    $("ribbon").innerHTML = "";
+  } else {
+    const active = nums.filter((n) => !td[n].Retired && !td[n].Stopped);
+    const g = Object.fromEntries(active.map((n) => [n, gapSecs(n)]));
+    const me = g[simDrv] ?? 0, re = me + pitLoss;
+    const others = active.filter((n) => n !== simDrv).sort((a, b) => g[a] - g[b]);
+    const ahead = others.filter((n) => g[n] <= re), behind = others.filter((n) => g[n] > re);
+    const newPos = ahead.length + 1, curPos = +td[simDrv].Position, a = ahead[ahead.length - 1], b = behind[0];
+    $("simout").innerHTML = `<div class="big">P${curPos} <span style="color:var(--dim)">→</span> <em>P${newPos}</em></div>
+      <div class="kpi"><div><span class="eyebrow">Places lost</span><b class="${newPos > curPos ? "dn" : "up"}">${newPos - curPos}</b></div>
+      <div><span class="eyebrow">Rejoins behind</span><b>${a ? tla(a) + ` <span class="mono" style="font-size:13px;color:var(--mut)">+${(re - g[a]).toFixed(1)}s</span>` : "—"}</b></div>
+      <div><span class="eyebrow">Ahead of</span><b>${b ? tla(b) + ` <span class="mono" style="font-size:13px;color:var(--mut)">${(g[b] - re).toFixed(1)}s</span>` : "—"}</b></div></div>`;
+    // ribbon: everyone on a gap axis around the driver, ghost at rejoin
+    const lo = Math.max(0, me - 8), hi = re + 12, X = (s) => 3 + (s - lo) / (hi - lo) * 94;
+    $("ribbon").innerHTML = active.filter((n) => g[n] >= lo && g[n] <= hi).map((n) => `<div class="rb ${n === simDrv ? "me" : ""}" style="left:${X(g[n])}%"><i style="background:${col(n)}"></i>${tla(n)}</div>`).join("")
+      + `<div class="rb ghost" style="left:${X(re)}%"><i></i>${tla(simDrv)} after stop</div>`;
+  }
+
   // undercut watch
   const items = [];
-  nums.forEach((n, i) => { if (!i) return; const p = nums[i - 1]; const iv = parseFloat(String(intOf(td[n])).replace("+", ""));
+  nums.forEach((n, i) => { if (!i) return; const p = nums[i - 1]; const iv = parseFloat(String(intOf(td[n], i, nums, td)).replace("+", ""));
     if (!(iv > 0 && iv < 3.5)) return; const sa = stintsOf(n).slice(-1)[0] || {}, sb = stintsOf(p).slice(-1)[0] || {};
     const da = sa.TotalLaps || 0, db = sb.TotalLaps || 0;
     if (db - da >= 5) items.push(["#2fd67b", "PACE EDGE", `<b>${tla(n)}</b> is ${iv.toFixed(1)}s behind <b>${tla(p)}</b> on tyres ${db - da} laps fresher (${(sa.Compound || "?")[0]}${da} vs ${(sb.Compound || "?")[0]}${db}). Overtake on track looks likely.`]);
@@ -636,14 +1762,24 @@ function renderStrategy() {
   const free = active.filter((n, i) => { const nx = active[i + 1]; return nx && g[nx] - g[n] > pitLoss; }).map(tla);
   if (free.length && isRace()) items.push(["#cdb2ff", "FREE STOP", `<b>${free.join(", ")}</b> ${free.length > 1 ? "have" : "has"} more than ${pitLoss.toFixed(0)}s to the car behind and can pit without losing a place.`]);
   $("watch").innerHTML = items.length ? items.slice(0, 8).map((x) => `<div class="wi"><span class="badge" style="background:${x[0]}22;color:${x[0]}">${x[1]}</span><span>${x[2]}</span></div>`).join("") : '<div class="empty">No close fights with a tyre offset right now.</div>';
-  // stints
+
+  // stints with 0-lap filter
   const total = (S.LapCount && S.LapCount.TotalLaps) || 1;
   $("strat").innerHTML = nums.map((n) => {
     const st = stintsOf(n); let used = 0;
-    const bars = st.map((s) => { const laps = Math.max(0, (s.TotalLaps || 0) - (s.StartLaps || 0)); used += laps; const c = (s.Compound || "UNKNOWN").toUpperCase();
-      return `<span class="${c}" style="width:${(laps / total * 100).toFixed(2)}%" title="${c} · ${laps} laps">${laps >= 4 ? c[0] + laps : ""}</span>`; }).join("");
+    const bars = st
+      .map((s) => {
+        const laps = Math.max(0, (s.TotalLaps || 0) - (s.StartLaps || 0));
+        used += laps;
+        const c = (s.Compound || "UNKNOWN").toUpperCase();
+        return { laps, c };
+      })
+      .filter((x) => x.laps > 0)
+      .map((x) => `<span class="${x.c}" style="width:${(x.laps / total * 100).toFixed(2)}%" title="${x.c} · ${x.laps} laps">${x.laps >= 4 ? x.c[0] + x.laps : ""}</span>`)
+      .join("");
     return `<tr><td class="pos mono">${esc(td[n].Position)}</td><td><div class="drv"><span class="tb" style="background:${col(n)}"></span><span class="tla">${esc(tla(n))}</span></div></td><td><div class="stint">${bars}</div></td><td class="c mono">${td[n].NumberOfPitStops ?? Math.max(0, st.length - 1)}</td></tr>`;
   }).join("");
+
   // compound split
   const cnt = {}; active.forEach((n) => { const s = stintsOf(n).slice(-1)[0]; if (!s) return; const c = (s.Compound || "UNKNOWN").toUpperCase(); cnt[c] = cnt[c] || { n: 0, age: 0 }; cnt[c].n++; cnt[c].age += s.TotalLaps || 0; });
   const COLS = { SOFT: "#ff3b4a", MEDIUM: "#f5c518", HARD: "#f2f2f2", INTERMEDIATE: "#2fd67b", WET: "#3b8cff", UNKNOWN: "#666" };
@@ -675,24 +1811,29 @@ function renderAnalysis() {
   $("poschart").innerHTML = series.length ? svg : `<text x="500" y="210" text-anchor="middle" fill="#8d8898" font-size="14">The race story builds lap by lap once a race is running.</text>`;
   $("poschips").innerHTML = nums.map((n) => `<button data-n="${n}" class="${hl.has(n) ? "on" : ""}"><i style="background:${col(n)}"></i>${tla(n)}</button>`).join("");
   $("poschips").querySelectorAll("button").forEach((b) => b.onclick = () => { hl.has(b.dataset.n) ? hl.delete(b.dataset.n) : hl.add(b.dataset.n); renderAnalysis(); });
-  // sector heatmap + ideal lap
+
+  // sector heatmap + ideal lap with negative-zero elimination
   const st = (S.TimingStats || {}).Lines || {}; const best = [Infinity, Infinity, Infinity];
   nums.forEach((n) => vals((st[n] || {}).BestSectors).forEach((b, i) => { const v = parseFloat(b && b.Value); if (v && v < best[i]) best[i] = v; }));
   const rows = nums.map((n) => { const bs = vals((st[n] || {}).BestSectors).map((b) => parseFloat(b && b.Value) || 0); const ideal = bs.length === 3 && bs.every(Boolean) ? bs[0] + bs[1] + bs[2] : 0;
     return { n, bs, ideal, pb: lapSecs(st[n] && st[n].PersonalBestLapTime && st[n].PersonalBestLapTime.Value) }; }).filter((r) => r.ideal).sort((a, b) => a.ideal - b.ideal);
   const heat = (v, b) => { if (!v) return "transparent"; const d = v - b; if (d < 0.0005) return "rgba(178,107,255,.55)"; const t = Math.min(1, d / 0.8); return `rgba(${Math.round(47 + t * 208)},${Math.round(214 - t * 150)},${Math.round(123 - t * 50)},${0.18 + t * 0.22})`; };
+  
   $("heat").innerHTML = rows.length ? rows.map((r) => `<tr><td><div class="drv"><span class="tb" style="background:${col(r.n)}"></span><span class="tla">${tla(r.n)}</span></div></td>
     ${r.bs.map((v, i) => `<td class="h mono" style="background:${heat(v, best[i])}">${v ? (v - best[i] < 0.0005 ? v.toFixed(3) : "+" + (v - best[i]).toFixed(3)) : "–"}</td>`).join("")}
-    <td class="r mono">${fmtLap(r.ideal)}</td><td class="r mono">${fmtLap(r.pb)}</td><td class="r mono" style="color:var(--acc)">${r.pb ? "−" + (r.pb - r.ideal).toFixed(3) : ""}</td></tr>`).join("") : '<tr><td colspan="7" class="empty">Waiting for sector times</td></tr>';
+    <td class="r mono">${fmtLap(r.ideal)}</td><td class="r mono">${fmtLap(r.pb)}</td>
+    <td class="r mono" style="color:var(--acc)">${r.pb ? (Math.abs(r.pb - r.ideal) < 0.0005 ? "–" : "−" + Math.max(0, r.pb - r.ideal).toFixed(3)) : ""}</td></tr>`).join("") : '<tr><td colspan="7" class="empty">Waiting for sector times</td></tr>';
+
   // movers
   const ta = (S.TimingAppData || {}).Lines || {};
   const mv = nums.map((n) => [n, (+(ta[n] || {}).GridPos || 0) - (+td[n].Position || 0), +(ta[n] || {}).GridPos]).filter((x) => x[2]).sort((a, b) => b[1] - a[1]);
   const mmax = Math.max(1, ...mv.map((x) => Math.abs(x[1])));
   $("movers").innerHTML = mv.length && isRace() ? mv.map(([n, d]) => `<div class="div"><span class="tla" style="font-size:12px">${tla(n)}</span><span class="l">${d < 0 ? `<i style="width:${-d / mmax * 100}%;background:#ff6b78"></i>` : ""}</span><span class="rr">${d > 0 ? `<i style="width:${d / mmax * 100}%;background:#2fd67b"></i>` : ""}</span><span class="mono ${d > 0 ? "up" : d < 0 ? "dn" : ""}">${d > 0 ? "+" + d : d}</span></div>`).join("") : '<div class="empty">Grid comparison appears during a race.</div>';
+
   // speed traps
   const tr = nums.map((n) => [n, +((st[n] || {}).BestSpeeds && st[n].BestSpeeds.ST && st[n].BestSpeeds.ST.Value) || 0]).filter((x) => x[1]).sort((a, b) => b[1] - a[1]);
   const tmin = Math.min(...tr.map((x) => x[1])) - 5, tmax = Math.max(...tr.map((x) => x[1]));
-  $("traps").innerHTML = tr.length ? tr.map(([n, v]) => `<div class="brow"><span class="tla" style="font-size:12px">${tla(n)}</span><span class="tr"><i style="width:${(v - tmin) / (tmax - tmin) * 100}%;background:${col(n)}"></i></span><span class="mono r">${v}</span></div>`).join("") : '<div class="empty">No speed trap data yet</div>';
+  $("traps").innerHTML = tr.length ? tr.map(([n, v]) => `<div class="brow"><span class="tla" style="font-size:12px">${tla(n)}</span><span class="tr"><i style="width:${(v - tmin) / (tmax - tmin) * 100}%;background:${col(n)}"></i></span><span class="mono r">${fmtSpeed(v, false)}</span></div>`).join("") : '<div class="empty">No speed trap data yet</div>';
 }
 
 // ---------- season + live championship ----------
@@ -755,21 +1896,109 @@ function onState(force) {
   if (track) { const nb = sectorBounds(); if (Math.abs(nb[0] - bounds[0]) > 0.01 || Math.abs(nb[1] - bounds[1]) > 0.01) drawTrack(); }
   updateCars(performance.now());
   if (tab === "overview") { renderTower(); renderBest(); renderRC(); renderRadio(); renderInsights(); }
-  const now = Date.now(); if (!force && now - lastHeavy < 2000) return; lastHeavy = now;  // heavier tabs refresh every 2s
+  if (tab === "telemetry" && window.telemetryEngine) window.telemetryEngine.update();
+  const now = Date.now(); if (!force && now - lastHeavy < 2000) return; lastHeavy = now;
   if (tab === "strategy") renderStrategy();
   if (tab === "analysis") renderAnalysis();
   if (tab === "season") renderSeason();
 }
+
 document.querySelectorAll("#tabs button").forEach((b) => b.onclick = () => {
   tab = b.dataset.tab; document.querySelectorAll("#tabs button").forEach((x) => x.classList.toggle("on", x === b));
-  ["overview", "strategy", "analysis", "season"].forEach((t) => $("tab-" + t).classList.toggle("hidden", t !== tab));
-  radioKey = ""; onState(true);
+  ["overview", "telemetry", "strategy", "analysis", "season"].forEach((t) => {
+    const el = $("tab-" + t);
+    if (el) el.classList.toggle("hidden", t !== tab);
+  });
+  radioKey = "";
+  if (tab === "telemetry" && window.telemetryEngine) window.telemetryEngine.update();
+  onState(true);
 });
+
 $("setbtn").onclick = (e) => { e.stopPropagation(); $("pop").classList.toggle("on"); };
 document.addEventListener("click", () => $("pop").classList.remove("on"));
 $("delay").oninput = (e) => { delayMs = +e.target.value * 1000; $("delayv").textContent = e.target.value + "s"; };
 $("fsbtn").onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+
+// Settings & drawer wiring
+document.querySelectorAll("#seg-speed button").forEach((b) => {
+  b.classList.toggle("on", b.dataset.u === unitSpeed);
+  b.onclick = () => {
+    unitSpeed = b.dataset.u;
+    localStorage.setItem("f1_unit_speed", unitSpeed);
+    document.querySelectorAll("#seg-speed button").forEach((x) => x.classList.toggle("on", x === b));
+    onState(true);
+  };
+});
+
+document.querySelectorAll("#seg-temp button").forEach((b) => {
+  b.classList.toggle("on", b.dataset.u === unitTemp);
+  b.onclick = () => {
+    unitTemp = b.dataset.u;
+    localStorage.setItem("f1_unit_temp", unitTemp);
+    document.querySelectorAll("#seg-temp button").forEach((x) => x.classList.toggle("on", x === b));
+    onState(true);
+  };
+});
+
+const btnMute = $("btn-radio-mute");
+if (btnMute) {
+  btnMute.onclick = () => {
+    radioMuted = !radioMuted;
+    localStorage.setItem("f1_radio_muted", radioMuted);
+    applyAudioVolume();
+  };
+}
+const sliderRadioVol = $("slider-radio-vol");
+if (sliderRadioVol) {
+  sliderRadioVol.oninput = (e) => {
+    radioVol = +e.target.value;
+    radioMuted = false;
+    localStorage.setItem("f1_radio_vol", radioVol);
+    localStorage.setItem("f1_radio_muted", "false");
+    applyAudioVolume();
+  };
+}
+const popMuteBtn = $("pop-mute-btn");
+if (popMuteBtn) {
+  popMuteBtn.onclick = () => {
+    radioMuted = !radioMuted;
+    localStorage.setItem("f1_radio_muted", radioMuted);
+    applyAudioVolume();
+  };
+}
+const popVolSlider = $("pop-vol-slider");
+if (popVolSlider) {
+  popVolSlider.oninput = (e) => {
+    radioVol = +e.target.value;
+    radioMuted = false;
+    localStorage.setItem("f1_radio_vol", radioVol);
+    localStorage.setItem("f1_radio_muted", "false");
+    applyAudioVolume();
+  };
+}
+
+document.querySelectorAll("#scModeSeg button").forEach((b) => {
+  b.onclick = () => {
+    scMode = b.dataset.mode;
+    document.querySelectorAll("#scModeSeg button").forEach((x) => x.classList.toggle("on", x === b));
+    renderScDeltaEstimator();
+  };
+});
+
+document.querySelectorAll("#mobile-subnav button").forEach((b) => {
+  b.onclick = () => {
+    mobileView = b.dataset.mview;
+    document.body.setAttribute("data-mview", mobileView);
+    document.querySelectorAll("#mobile-subnav button").forEach((x) => x.classList.toggle("on", x === b));
+  };
+});
+
+window.telemetryEngine = new TelemetryEngine("telemetryCanvas");
+
 loadSeason(); connect();
+</script>
+</body>
+</html>
 </script>
 </body>
 </html>

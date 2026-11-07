@@ -4,7 +4,10 @@
   "type": "commonjs",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "build": "node -e \"console.log('Build OK: Static SPA ready')\"",
+    "lint": "node --check server.js api/*.js",
+    "test": "node --test test/*.test.js"
   },
   "dependencies": {
     "ws": "^8.18.0"
