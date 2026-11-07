@@ -594,7 +594,10 @@ function gapSecs(n) { // seconds behind leader, lapped cars converted with the m
   const m = g.match(/(\d+)\s*L/i);
   if (m) return +m[1] * avgLap() + 0.01 * (+l.Position || +l.Line || 0);
   if (/LAP/i.test(g)) return avgLap() + 0.01 * (+l.Position || +l.Line || 0);
-  return parseFloat(g.replace("+", "")) || 0;
+  const clean = g.replace("+", "");
+  const p = clean.split(":");
+  const v = p.length === 2 ? +p[0] * 60 + parseFloat(p[1]) : parseFloat(clean);
+  return Number.isFinite(v) ? v : 0;
 }
 function stintsOf(n) { return vals((((S.TimingAppData || {}).Lines || {})[n] || {}).Stints).filter(Boolean); }
 
@@ -1720,6 +1723,8 @@ function pitLaneMedian() {
 function renderStrategy() {
   renderScDeltaEstimator();
   const nums = order(), td = lines(); if (!nums.length) { $("simout").innerHTML = '<div class="empty">Strategy tools come alive during a session.</div>'; return; }
+  const active = nums.filter((n) => !td[n].Retired && !td[n].Stopped);
+  const g = Object.fromEntries(active.map((n) => [n, gapSecs(n)]));
   const med = pitLaneMedian(); if (med && !lossTouched) { pitLoss = Math.round(med * 2) / 2; $("loss").value = pitLoss; }
   $("lossv").textContent = pitLoss.toFixed(1) + "s" + (med && !lossTouched ? " (median pit lane time)" : "");
   const sel = $("simdrv"); if (!simDrv || !td[simDrv]) simDrv = nums[Math.min(3, nums.length - 1)];
@@ -1734,8 +1739,6 @@ function renderStrategy() {
     </div>`;
     $("ribbon").innerHTML = "";
   } else {
-    const active = nums.filter((n) => !td[n].Retired && !td[n].Stopped);
-    const g = Object.fromEntries(active.map((n) => [n, gapSecs(n)]));
     const me = g[simDrv] ?? 0, re = me + pitLoss;
     const others = active.filter((n) => n !== simDrv).sort((a, b) => g[a] - g[b]);
     const ahead = others.filter((n) => g[n] <= re), behind = others.filter((n) => g[n] > re);
@@ -1759,7 +1762,7 @@ function renderStrategy() {
     else if (da - db >= 5) items.push(["#ff6b78", "UNDERCUT", `<b>${tla(n)}</b> sits ${iv.toFixed(1)}s behind <b>${tla(p)}</b> on ${da - db}-lap older tyres. Pitting first could jump them.`]);
     else if (iv < 1) items.push(["#3b8cff", "DRS", `<b>${tla(n)}</b> is within DRS of <b>${tla(p)}</b> at ${iv.toFixed(3)}s on similar tyres.`]);
   });
-  const free = active.filter((n, i) => { const nx = active[i + 1]; return nx && g[nx] - g[n] > pitLoss; }).map(tla);
+  const free = (isRace() ? active : []).filter((n, i) => { const nx = active[i + 1]; return nx && g[nx] - g[n] > pitLoss; }).map(tla);
   if (free.length && isRace()) items.push(["#cdb2ff", "FREE STOP", `<b>${free.join(", ")}</b> ${free.length > 1 ? "have" : "has"} more than ${pitLoss.toFixed(0)}s to the car behind and can pit without losing a place.`]);
   $("watch").innerHTML = items.length ? items.slice(0, 8).map((x) => `<div class="wi"><span class="badge" style="background:${x[0]}22;color:${x[0]}">${x[1]}</span><span>${x[2]}</span></div>`).join("") : '<div class="empty">No close fights with a tyre offset right now.</div>';
 
@@ -1783,7 +1786,7 @@ function renderStrategy() {
   // compound split
   const cnt = {}; active.forEach((n) => { const s = stintsOf(n).slice(-1)[0]; if (!s) return; const c = (s.Compound || "UNKNOWN").toUpperCase(); cnt[c] = cnt[c] || { n: 0, age: 0 }; cnt[c].n++; cnt[c].age += s.TotalLaps || 0; });
   const COLS = { SOFT: "#ff3b4a", MEDIUM: "#f5c518", HARD: "#f2f2f2", INTERMEDIATE: "#2fd67b", WET: "#3b8cff", UNKNOWN: "#666" };
-  $("comp").innerHTML = Object.entries(cnt).sort((a, b) => b[1].n - a[1].n).map(([c, v]) => `<div class="brow" style="grid-template-columns:90px 1fr 120px;height:28px"><span><span class="tyre ${c}" style="width:16px;height:16px;font-size:9px">${c[0]}</span> ${c[0] + c.slice(1).toLowerCase()}</span><span class="tr"><i style="width:${v.n / active.length * 100}%;background:${COLS[c]}"></i></span><span class="mono r">${v.n} cars · ${(v.age / v.n).toFixed(0)} laps avg</span></div>`).join("");
+  $("comp").innerHTML = Object.entries(cnt).sort((a, b) => b[1].n - a[1].n).map(([c, v]) => `<div class="brow" style="grid-template-columns:90px 1fr 120px;height:28px"><span><span class="tyre ${c}" style="width:16px;height:16px;font-size:9px">${c[0]}</span> ${c[0] + c.slice(1).toLowerCase()}</span><span class="tr"><i style="width:${v.n / (active.length || 1) * 100}%;background:${COLS[c]}"></i></span><span class="mono r">${v.n} cars · ${(v.age / v.n).toFixed(0)} laps avg</span></div>`).join("");
 }
 $("simdrv").onchange = (e) => { simDrv = e.target.value; renderStrategy(); };
 $("loss").oninput = (e) => { pitLoss = +e.target.value; lossTouched = true; renderStrategy(); };
@@ -1822,7 +1825,7 @@ function renderAnalysis() {
   $("heat").innerHTML = rows.length ? rows.map((r) => `<tr><td><div class="drv"><span class="tb" style="background:${col(r.n)}"></span><span class="tla">${tla(r.n)}</span></div></td>
     ${r.bs.map((v, i) => `<td class="h mono" style="background:${heat(v, best[i])}">${v ? (v - best[i] < 0.0005 ? v.toFixed(3) : "+" + (v - best[i]).toFixed(3)) : "–"}</td>`).join("")}
     <td class="r mono">${fmtLap(r.ideal)}</td><td class="r mono">${fmtLap(r.pb)}</td>
-    <td class="r mono" style="color:var(--acc)">${r.pb ? (Math.abs(r.pb - r.ideal) < 0.0005 ? "–" : "−" + Math.max(0, r.pb - r.ideal).toFixed(3)) : ""}</td></tr>`).join("") : '<tr><td colspan="7" class="empty">Waiting for sector times</td></tr>';
+    <td class="r mono" style="color:var(--acc)">${r.pb ? (r.pb - r.ideal < 0.0005 ? "–" : "−" + (r.pb - r.ideal).toFixed(3)) : ""}</td></tr>`).join("") : '<tr><td colspan="7" class="empty">Waiting for sector times</td></tr>';
 
   // movers
   const ta = (S.TimingAppData || {}).Lines || {};

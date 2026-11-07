@@ -30,7 +30,15 @@ function gapSecs(n, lines, avgLap) {
   const m = g.match(/(\d+)\s*L/i);
   if (m) return +m[1] * avgLap + 0.01 * (+l.Position || +l.Line || 0);
   if (/LAP/i.test(g)) return avgLap + 0.01 * (+l.Position || +l.Line || 0);
-  return parseFloat(g.replace("+", "")) || 0;
+  const clean = g.replace("+", "").trim();
+  let val;
+  if (clean.includes(":")) {
+    const parts = clean.split(":");
+    val = +parts[0] * 60 + parseFloat(parts[1]);
+  } else {
+    val = parseFloat(clean);
+  }
+  return Number.isFinite(val) ? val : 0;
 }
 
 function intOf(l, i, nums, td, avgLap) {
@@ -65,10 +73,10 @@ function intOf(l, i, nums, td, avgLap) {
 }
 
 function formatPotential(pb, ideal) {
-  if (!pb || !ideal) return "";
+  if (!pb || !ideal || !Number.isFinite(pb) || !Number.isFinite(ideal)) return "";
   const delta = pb - ideal;
-  if (Math.abs(delta) < 0.0005) return "–";
-  return "−" + Math.max(0, delta).toFixed(3);
+  if (delta < 0.0005) return "–";
+  return "−" + delta.toFixed(3);
 }
 
 function filterStints(stints, totalLaps) {
@@ -179,6 +187,41 @@ describe('Formula 1 Pit Wall Telemetry & Mathematics Test Suite', () => {
     it('returns 0 for undefined or null driver line', () => {
       assert.equal(gapSecs('999', mockLines, avgLapTime), 0);
     });
+
+    it('returns 0 for non-finite string inputs ("Infinity", "+Infinity", "-Infinity")', () => {
+      const infLines = {
+        '90': { Position: '10', GapToLeader: 'Infinity' },
+        '91': { Position: '11', GapToLeader: '+Infinity' },
+        '92': { Position: '12', GapToLeader: '-Infinity' }
+      };
+      assert.equal(gapSecs('90', infLines, avgLapTime), 0, 'Infinity gap must resolve to 0');
+      assert.equal(gapSecs('91', infLines, avgLapTime), 0, '+Infinity gap must resolve to 0');
+      assert.equal(gapSecs('92', infLines, avgLapTime), 0, '-Infinity gap must resolve to 0');
+    });
+
+    it('returns 0 for "NaN", "+NaN", and malformed non-numeric string gaps', () => {
+      const nanLines = {
+        '80': { Position: '10', GapToLeader: 'NaN' },
+        '81': { Position: '11', GapToLeader: '+NaN' },
+        '82': { Position: '12', GapToLeader: 'INVALID' },
+        '83': { Position: '13', GapToLeader: 'STOP' },
+        '84': { Position: '14', GapToLeader: '--' }
+      };
+      assert.equal(gapSecs('80', nanLines, avgLapTime), 0);
+      assert.equal(gapSecs('81', nanLines, avgLapTime), 0);
+      assert.equal(gapSecs('82', nanLines, avgLapTime), 0);
+      assert.equal(gapSecs('83', nanLines, avgLapTime), 0);
+      assert.equal(gapSecs('84', nanLines, avgLapTime), 0);
+    });
+
+    it('correctly parses minute:second format gaps ("+1:05.432") into total seconds', () => {
+      const minLines = {
+        '55': { Position: '5', GapToLeader: '+1:05.432' },
+        '63': { Position: '6', GapToLeader: '2:14.050' }
+      };
+      assert.equal(gapSecs('55', minLines, avgLapTime), 65.432);
+      assert.equal(gapSecs('63', minLines, avgLapTime), 134.05);
+    });
   });
 
   describe('2. intOf() Qualifying & Interval Delta Computation', () => {
@@ -219,6 +262,42 @@ describe('Formula 1 Pit Wall Telemetry & Mathematics Test Suite', () => {
     it('returns empty string when pb or ideal is missing or zero', () => {
       assert.equal(formatPotential(0, 83.450), '');
       assert.equal(formatPotential(83.450, 0), '');
+    });
+
+    it('returns "–" when personal best is faster than ideal lap (negative delta, pb < ideal)', () => {
+      assert.equal(formatPotential(79.999, 80.000), '–', 'Negative delta -0.001 must format as en-dash');
+      assert.equal(formatPotential(75.000, 80.000), '–', 'Large negative delta -5.000 must format as en-dash');
+      assert.equal(formatPotential(79.9994, 80.000), '–', 'Negative epsilon delta -0.0006 must format as en-dash');
+      assert.equal(formatPotential(79.9999, 80.000), '–', 'Sub-millisecond negative delta must format as en-dash');
+    });
+
+    it('returns "–" for near-zero positive deltas below rounding threshold (< 0.0005)', () => {
+      assert.equal(formatPotential(80.00049, 80.000), '–', 'Delta +0.00049 must format as en-dash');
+      assert.equal(formatPotential(80.0001, 80.000), '–', 'Delta +0.0001 must format as en-dash');
+      assert.equal(formatPotential(80.000001, 80.000), '–', 'Sub-millisecond positive delta must format as en-dash');
+    });
+
+    it('never formats to "−0.000", "−-0.000", or "-0.000" across dense edge sweep [-2.000, +2.000]', () => {
+      const testDeltas = [
+        -2.0, -1.0, -0.5, -0.1, -0.01, -0.005, -0.001, -0.0009, -0.0005, -0.00049, -0.0001,
+        0.0,
+        0.0001, 0.00049, 0.0005, 0.00051, 0.0009, 0.001, 0.005, 0.01, 0.1, 0.5, 1.0, 2.0
+      ];
+      for (const d of testDeltas) {
+        const pb = 80.0 + d;
+        const ideal = 80.0;
+        const formatted = formatPotential(pb, ideal);
+
+        assert.notEqual(formatted, '−0.000', `Failed for delta ${d}: produced −0.000`);
+        assert.notEqual(formatted, '−-0.000', `Failed for delta ${d}: produced −-0.000`);
+        assert.notEqual(formatted, '-0.000', `Failed for delta ${d}: produced -0.000`);
+
+        if (d < 0.0005) {
+          assert.equal(formatted, '–', `Expected en-dash for delta ${d}`);
+        } else {
+          assert.match(formatted, /^−\d+\.\d{3}$/, `Expected unicode minus + 3 decimals for delta ${d}`);
+        }
+      }
     });
   });
 
@@ -421,6 +500,109 @@ describe('Formula 1 Pit Wall Telemetry & Mathematics Test Suite', () => {
       assert.ok(fs.existsSync(favPath), 'public/favicon.svg must exist');
       const favContent = fs.readFileSync(favPath, 'utf8');
       assert.ok(favContent.includes('<svg'), 'favicon.svg must contain valid SVG root element');
+    });
+
+    it('index.html scopes active and g before isRace() branch in renderStrategy()', () => {
+      const stratMatch = indexContent.match(/function renderStrategy\(\)\s*\{([\s\S]*?)\n\}/);
+      assert.ok(stratMatch, 'renderStrategy function must exist in index.html');
+      const body = stratMatch[1];
+      const activePos = body.indexOf('const active =');
+      const isRacePos = body.indexOf('if (!isRace())');
+      assert.ok(activePos !== -1, 'const active must be declared in renderStrategy');
+      assert.ok(isRacePos !== -1, 'if (!isRace()) branch must exist in renderStrategy');
+      assert.ok(activePos < isRacePos, 'const active must be declared BEFORE if (!isRace()) to prevent ReferenceError in non-race sessions');
+    });
+
+    it('index.html sector heatmap uses unidirectional (r.pb - r.ideal) < 0.0005 guard', () => {
+      assert.ok(!indexContent.includes('Math.abs(r.pb - r.ideal) < 0.0005'), 'Math.abs must not be used in heatmap delta guard');
+      assert.ok(indexContent.includes('(r.pb - r.ideal) < 0.0005') || indexContent.includes('r.pb - r.ideal < 0.0005'), 'Heatmap delta must use unidirectional < 0.0005 check');
+    });
+
+    it('index.html gapSecs uses Number.isFinite to guard against non-finite values', () => {
+      assert.match(indexContent, /Number\.isFinite/, 'gapSecs in index.html must use Number.isFinite');
+    });
+  });
+
+  describe('12. Strategy Engine & Session Rendering Safety', () => {
+    const vm = require('node:vm');
+    const indexPath = path.join(__dirname, '../public/index.html');
+    const indexContent = fs.readFileSync(indexPath, 'utf8');
+    const stratMatch = indexContent.match(/function renderStrategy\(\)\s*\{([\s\S]*?)\n\}/);
+
+    function executeStrategyInSandbox(isRaceActive, driverNumbers = ['1', '4', '16']) {
+      const dom = {};
+      const getEl = (id) => (dom[id] = dom[id] || { innerHTML: '', textContent: '', value: '22', dataset: {} });
+
+      const mockLines = {
+        '1': { Position: '1', Line: '1' },
+        '4': { Position: '2', Line: '2' },
+        '16': { Position: '3', Line: '3', Retired: false }
+      };
+
+      const sandbox = {
+        $: getEl,
+        document: { getElementById: getEl, querySelector: () => null, querySelectorAll: () => [] },
+        console,
+        Math,
+        parseFloat,
+        parseInt,
+        String,
+        Object,
+        Array,
+        Set,
+        Map,
+        Infinity,
+        NaN,
+        isRace: () => isRaceActive,
+        order: () => driverNumbers,
+        lines: () => mockLines,
+        pitLaneMedian: () => 22.0,
+        lossTouched: false,
+        pitLoss: 22.0,
+        simDrv: '1',
+        tla: (n) => ({ '1': 'VER', '4': 'NOR', '16': 'LEC' })[n] || String(n),
+        col: () => '#ff1801',
+        esc: (x) => String(x),
+        gapSecs: (n) => ({ '1': 0, '4': 2.5, '16': 5.0 })[n] || 0,
+        intOf: () => '+2.500',
+        stintsOf: () => [{ Compound: 'SOFT', StartLaps: 0, TotalLaps: 15 }],
+        vals: (o) => Object.values(o || {}),
+        renderScDeltaEstimator: () => {},
+        S: {
+          LapCount: { TotalLaps: 50 },
+          TimingAppData: { Lines: {} }
+        }
+      };
+
+      vm.createContext(sandbox);
+      vm.runInContext(stratMatch[0] + '\nrenderStrategy();', sandbox);
+      return dom;
+    }
+
+    it('executes renderStrategy() cleanly in non-race mode (isRace() === false) without ReferenceError', () => {
+      assert.doesNotThrow(() => {
+        const dom = executeStrategyInSandbox(false, ['1', '4', '16']);
+        assert.ok(dom.simout && dom.simout.innerHTML.includes('Qualifying Session Active'), 'Qualifying notice must render in non-race mode');
+        assert.ok(dom.strat && dom.strat.innerHTML.includes('VER'), 'Stint rows must render in non-race mode');
+        assert.ok(dom.comp && dom.comp.innerHTML.includes('Soft'), 'Compound split must render in non-race mode');
+        assert.ok(dom.watch, 'Undercut watch must render in non-race mode');
+      });
+    });
+
+    it('executes renderStrategy() cleanly in race mode (isRace() === true) with undercut & pit window', () => {
+      assert.doesNotThrow(() => {
+        const dom = executeStrategyInSandbox(true, ['1', '4', '16']);
+        assert.ok(dom.simout && dom.simout.innerHTML.includes('P1'), 'Race pit stop simulator must render position delta');
+        assert.ok(dom.ribbon && dom.ribbon.innerHTML.includes('VER'), 'Driver gap ribbon must render');
+        assert.ok(dom.strat && dom.strat.innerHTML.includes('NOR'), 'Stint rows must render in race mode');
+      });
+    });
+
+    it('handles empty driver order safely without throwing', () => {
+      assert.doesNotThrow(() => {
+        const dom = executeStrategyInSandbox(false, []);
+        assert.ok(dom.simout && dom.simout.innerHTML.includes('Strategy tools come alive'), 'Empty state must render when no drivers present');
+      });
     });
   });
 });
