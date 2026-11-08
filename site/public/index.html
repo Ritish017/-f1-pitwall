@@ -1048,7 +1048,7 @@ function renderTower() {
   const td = lines(), dl = S.DriverList || {}, nums = order();
   const tbody = $("tower");
   if (!nums.length) {
-    tbody.innerHTML = `<tr><td colspan="10" class="empty">No session running. Timing appears here the moment a session goes live.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12" class="empty">No session running. Timing appears here the moment a session goes live.</td></tr>`;
     towerCache.clear();
     return;
   }
@@ -1082,6 +1082,18 @@ function renderTower() {
     const lastLapVal = (l.LastLapTime && l.LastLapTime.Value) || "";
     const lastLapCls = "mono " + cls(l.LastLapTime);
 
+    const statsLines = (S.TimingStats && S.TimingStats.Lines) || {};
+    const driverStats = statsLines[n] || {};
+    const bestLapObj = l.BestLapTime || driverStats.PersonalBestLapTime || {};
+    const bestLapVal = bestLapObj.Value || "";
+    const isOverallFastest = !!(bestLapObj.OverallFastest || (driverStats.PersonalBestLapTime && driverStats.PersonalBestLapTime.Position === 1));
+    const isPersonalFastest = !!bestLapObj.PersonalFastest;
+    const bestLapCls = "mono hide-m best-lap-cell best-lap" + (isOverallFastest ? " p overall-fastest" : (bestLapVal ? " g personal-fastest" : ""));
+
+    const deltaInfo = compareLastVsBest(lastLapVal, bestLapVal);
+    const deltaText = deltaInfo.text;
+    const deltaCls = "mono hide-m delta-pb-cell delta-cell " + deltaInfo.cls;
+
     const s0 = vals(l.Sectors)[0] || {}, s1 = vals(l.Sectors)[1] || {}, s2 = vals(l.Sectors)[2] || {};
     const s0Val = s0.Value || "", s1Val = s1.Value || "", s2Val = s2.Value || "";
     const s0Cls = "mono " + cls(s0), s1Cls = "mono " + cls(s1), s2Cls = "mono " + cls(s2);
@@ -1097,6 +1109,8 @@ function renderTower() {
         <td><div class="drv"><span class="tb"></span><span class="tla"></span><span class="ln hide-m"></span><span class="tags-wrap"></span></div></td>
         <td class="mono gap"></td>
         <td class="mono last-lap"></td>
+        <td class="mono hide-m best-lap-cell"></td>
+        <td class="mono hide-m delta-pb-cell"></td>
         <td class="sec hide-m s1-cell"><span class="mono"></span><div class="ms"></div></td>
         <td class="sec hide-m s2-cell"><span class="mono"></span><div class="ms"></div></td>
         <td class="sec hide-m s3-cell"><span class="mono"></span><div class="ms"></div></td>
@@ -1113,6 +1127,8 @@ function renderTower() {
         tagsWrap: tr.querySelector(".tags-wrap"),
         gap: tr.querySelector(".gap"),
         lastLap: tr.querySelector(".last-lap"),
+        bestLap: tr.querySelector(".best-lap-cell"),
+        deltaPb: tr.querySelector(".delta-pb-cell"),
         s1Span: tr.querySelector(".s1-cell span"),
         s1Ms: tr.querySelector(".s1-cell .ms"),
         s2Span: tr.querySelector(".s2-cell span"),
@@ -1155,6 +1171,20 @@ function renderTower() {
       row.lastLap.className = lastLapCls;
       row.state.lastLapVal = lastLapVal;
       row.state.lastLapCls = lastLapCls;
+    }
+
+    if (row.state.bestLapVal !== bestLapVal || row.state.bestLapCls !== bestLapCls) {
+      row.bestLap.textContent = bestLapVal || "–";
+      row.bestLap.className = bestLapCls;
+      row.state.bestLapVal = bestLapVal;
+      row.state.bestLapCls = bestLapCls;
+    }
+
+    if (row.state.deltaText !== deltaText || row.state.deltaCls !== deltaCls) {
+      row.deltaPb.textContent = deltaText;
+      row.deltaPb.className = deltaCls;
+      row.state.deltaText = deltaText;
+      row.state.deltaCls = deltaCls;
     }
 
     if (row.state.s0Val !== s0Val || row.state.s0Cls !== s0Cls) { row.s1Span.textContent = s0Val; row.s1Span.className = s0Cls; row.state.s0Val = s0Val; row.state.s0Cls = s0Cls; }

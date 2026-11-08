@@ -903,6 +903,21 @@ describe('Formula 1 Pit Wall Telemetry & Mathematics Test Suite', () => {
       assert.strictEqual(h2h.diff, 0.667);
       assert.strictEqual(h2h.faster, 'A');
     });
+
+    it('guarantees 1:1 column count match between timing thead headers and tbody tr row cells', () => {
+      const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+      const theadMatch = html.match(/<thead><tr>([\s\S]*?)<\/tr><\/thead>/i);
+      assert.ok(theadMatch, 'Must find tower table thead');
+      const thCount = (theadMatch[1].match(/<th/gi) || []).length;
+      
+      const trMatch = html.match(/tr\.innerHTML\s*=\s*`([\s\S]*?)`;/);
+      assert.ok(trMatch, 'Must find tr.innerHTML template in renderTower()');
+      const tdCount = (trMatch[1].match(/<td/gi) || []).length;
+
+      assert.strictEqual(thCount, 12, 'Timing tower thead must have exactly 12 columns');
+      assert.strictEqual(tdCount, 12, 'Timing tower tr row must have exactly 12 cells');
+      assert.strictEqual(thCount, tdCount, 'Headers and row cells must be in 1:1 alignment to prevent column shifting');
+    });
   });
 });
 
