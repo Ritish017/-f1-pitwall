@@ -42,6 +42,76 @@ button,select{font-family:inherit}
 .prog{width:220px;height:6px;background:#221f29;border-radius:6px;overflow:hidden;flex:none}.prog i{display:block;height:100%;background:linear-gradient(90deg,var(--acc2),var(--acc));width:0;transition:width .8s;box-shadow:0 0 12px var(--acc)}
 .st{display:flex;flex-direction:column;gap:2px}.st small{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}.st span{font-weight:700;font-size:16px}
 .sp{flex:1}
+/* Drag Resize Splitter between Live Timing & Track Circuit */
+#tab-overview.wrap {
+  display: flex;
+  gap: 0;
+  align-items: stretch;
+  position: relative;
+}
+#col-timing {
+  width: var(--split-timing-w, 46%);
+  flex: 0 0 var(--split-timing-w, 46%);
+  min-width: 300px;
+  max-width: calc(100% - 320px);
+  margin-right: 0;
+}
+.split-gutter {
+  width: 14px;
+  flex: 0 0 14px;
+  cursor: col-resize;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  touch-action: none;
+  z-index: 15;
+  margin: 0 2px;
+  transition: opacity .2s;
+}
+.split-gutter:hover .split-handle,
+.split-gutter.dragging .split-handle {
+  background: var(--acc);
+  box-shadow: 0 0 12px rgba(255, 59, 74, 0.7);
+  height: 80px;
+}
+.split-handle {
+  width: 4px;
+  height: 48px;
+  border-radius: 4px;
+  background: var(--line2);
+  transition: all .2s ease;
+  position: relative;
+}
+.split-handle::before,
+.split-handle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 2px;
+}
+.split-handle::before { left: -4px; }
+.split-handle::after { right: -4px; }
+
+#col-track {
+  flex: 1 1 0;
+  min-width: 300px;
+  overflow: hidden;
+}
+
+body.resizing {
+  user-select: none !important;
+  cursor: col-resize !important;
+}
+body.resizing * {
+  cursor: col-resize !important;
+}
+
 /* layout */
 .wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.22fr);gap:14px;padding:14px 22px 22px;max-width:1800px;margin:auto}
 .col{display:flex;flex-direction:column;gap:14px;min-width:0}
@@ -179,6 +249,11 @@ footer{color:var(--dim);font-size:11.5px;padding:0 22px 26px;max-width:1800px;ma
 .sc-card{border-radius:12px;padding:14px;background:var(--panel2);border:1px solid var(--line)}
 .hide-d{display:none}
 @media(max-width:1100px){
+  #tab-overview.wrap{display:flex;flex-direction:column;gap:14px}
+  #col-timing{width:100%!important;flex:none!important;max-width:none!important}
+  #col-track{width:100%!important;flex:none!important}
+  .split-gutter{display:none!important}
+
   .wrap{grid-template-columns:1fr;padding:10px}.grid2{grid-template-columns:1fr}
   .tabs{order:3;width:100%;margin:4px 0 0;overflow-x:auto}.tabs button{flex:1;padding:9px 8px}
   .top{flex-wrap:wrap;gap:10px;padding:10px 12px}.title{min-width:0;flex:1}.title .m{font-size:16px}
@@ -388,7 +463,10 @@ tr.selected-driver td:first-child{box-shadow:inset 3px 0 0 var(--acc)}
       <div class="legend"><span><span class="tyre SOFT">S</span>Soft</span><span><span class="tyre MEDIUM">M</span>Medium</span><span><span class="tyre HARD">H</span>Hard</span><span><span class="tyre INTERMEDIATE">I</span>Inter</span><span style="margin-left:auto" id="gapnote">Purple = session best · Green = personal best</span></div>
     </div>
   </div>
-  <div class="col trackcol">
+  <div id="split-gutter" class="split-gutter" title="Drag to resize Live timing and Track map (Double-click to reset)" role="separator" aria-orientation="vertical" tabindex="0">
+    <div class="split-handle"></div>
+  </div>
+  <div class="col trackcol" id="col-track">
     <div class="card" id="card-map">
       <div class="ch"><h2>Track <em>position</em></h2><span class="sub" id="mapsub">Live circuit</span></div>
       <div class="mapbox"><svg id="map" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet"></svg>
@@ -2632,6 +2710,75 @@ if (recBtn) {
 }
 
 
+
+// ---------- Resizable Splitter (Timing Table vs Track Map) ----------
+function initSplitter() {
+  const container = $("tab-overview");
+  const gutter = $("split-gutter");
+  if (!container || !gutter) return;
+
+  let savedPct = parseFloat(localStorage.getItem("f1_split_pct") || "46");
+  if (isNaN(savedPct) || savedPct < 22 || savedPct > 78) savedPct = 46;
+  container.style.setProperty("--split-timing-w", savedPct + "%");
+
+  let isDragging = false;
+
+  gutter.addEventListener("pointerdown", (e) => {
+    if (window.innerWidth <= 1100) return;
+    isDragging = true;
+    try { gutter.setPointerCapture(e.pointerId); } catch (_) {}
+    gutter.classList.add("dragging");
+    document.body.classList.add("resizing");
+    e.preventDefault();
+  });
+
+  const onPointerMove = (e) => {
+    if (!isDragging) return;
+    const rect = container.getBoundingClientRect();
+    if (!rect.width) return;
+    const offsetX = e.clientX - rect.left;
+    let pct = (offsetX / rect.width) * 100;
+    pct = Math.max(22, Math.min(78, pct));
+    container.style.setProperty("--split-timing-w", pct + "%");
+  };
+
+  const onPointerUp = (e) => {
+    if (!isDragging) return;
+    isDragging = false;
+    try { gutter.releasePointerCapture(e.pointerId); } catch (_) {}
+    gutter.classList.remove("dragging");
+    document.body.classList.remove("resizing");
+
+    const rect = container.getBoundingClientRect();
+    if (rect.width) {
+      const offsetX = e.clientX - rect.left;
+      let pct = (offsetX / rect.width) * 100;
+      pct = Math.max(22, Math.min(78, pct));
+      localStorage.setItem("f1_split_pct", pct.toFixed(2));
+    }
+  };
+
+  gutter.addEventListener("pointermove", onPointerMove);
+  gutter.addEventListener("pointerup", onPointerUp);
+  gutter.addEventListener("pointercancel", onPointerUp);
+
+  gutter.addEventListener("dblclick", () => {
+    container.style.setProperty("--split-timing-w", "46%");
+    localStorage.setItem("f1_split_pct", "46");
+  });
+
+  gutter.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      let current = parseFloat(container.style.getPropertyValue("--split-timing-w")) || 46;
+      current = e.key === "ArrowLeft" ? Math.max(22, current - 2) : Math.min(78, current + 2);
+      container.style.setProperty("--split-timing-w", current + "%");
+      localStorage.setItem("f1_split_pct", current.toFixed(2));
+      e.preventDefault();
+    }
+  });
+}
+
+initSplitter();
 loadSeason(); connect();
 </script>
 </body>

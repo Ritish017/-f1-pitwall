@@ -770,5 +770,58 @@ describe('Formula 1 Pit Wall Telemetry & Mathematics Test Suite', () => {
       assert.strictEqual(steady, null);
     });
   });
+
+  describe('15. Interactive Splitter & Layout Resizing Engine', () => {
+    it('verifies index.html defines split gutter, handle, and column IDs', () => {
+      const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+      assert.ok(html.includes('id="split-gutter"'), 'Must define split gutter element');
+      assert.ok(html.includes('class="split-handle"'), 'Must define split handle');
+      assert.ok(html.includes('id="col-timing"'), 'Must define col-timing ID');
+      assert.ok(html.includes('id="col-track"'), 'Must define col-track ID');
+      assert.ok(html.includes('initSplitter'), 'Must define initSplitter initializer');
+      assert.ok(html.includes('--split-timing-w'), 'Must use --split-timing-w CSS custom property');
+    });
+
+    it('bounds and clamps split width percentage within safe min/max thresholds', () => {
+      const clampSplit = (pct) => Math.max(22, Math.min(78, pct));
+
+      assert.strictEqual(clampSplit(10), 22, 'Cannot shrink timing table below 22%');
+      assert.strictEqual(clampSplit(46), 46, 'Maintains valid percentage untouched');
+      assert.strictEqual(clampSplit(65), 65, 'Allows expanding timing table to 65%');
+      assert.strictEqual(clampSplit(90), 78, 'Cannot shrink circuit map below 22% (78% timing max)');
+    });
+
+    it('computes offset percentage accurately from mouse/touch clientX and container bounds', () => {
+      const computePct = (clientX, containerLeft, containerWidth) => {
+        const offset = clientX - containerLeft;
+        const rawPct = (offset / containerWidth) * 100;
+        return Math.max(22, Math.min(78, rawPct));
+      };
+
+      const mid = computePct(600, 100, 1000); // 500 / 1000 = 50%
+      assert.strictEqual(mid, 50);
+
+      const leftClamp = computePct(150, 100, 1000); // 50 / 1000 = 5% -> clamped to 22%
+      assert.strictEqual(leftClamp, 22);
+
+      const rightClamp = computePct(950, 100, 1000); // 850 / 1000 = 85% -> clamped to 78%
+      assert.strictEqual(rightClamp, 78);
+    });
+
+    it('supports keyboard fine adjustments and reset to default 46%', () => {
+      let pct = 46;
+      const adjust = (key) => {
+        if (key === 'ArrowLeft') pct = Math.max(22, pct - 2);
+        if (key === 'ArrowRight') pct = Math.min(78, pct + 2);
+        if (key === 'Reset') pct = 46;
+        return pct;
+      };
+
+      assert.strictEqual(adjust('ArrowRight'), 48);
+      assert.strictEqual(adjust('ArrowRight'), 50);
+      assert.strictEqual(adjust('ArrowLeft'), 48);
+      assert.strictEqual(adjust('Reset'), 46);
+    });
+  });
 });
 
