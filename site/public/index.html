@@ -251,6 +251,22 @@ kbd{background:#2a2533;border:1px solid #4a3e5c;border-radius:6px;padding:3px 8p
 tr.selected-driver{background:rgba(205,178,255,.12)!important}
 tr.selected-driver td:first-child{box-shadow:inset 3px 0 0 var(--acc)}
 #tower tr{cursor:pointer}
+/* Live Gap freshness & Feed health */
+.gap-wrap{display:flex;align-items:center;gap:6px}
+.gap-val{font-weight:700}
+.gap-val.leader{color:var(--acc);font-weight:800;letter-spacing:.08em;font-size:12px}
+.gap-age{font-size:9.5px;color:var(--dim);background:#1a1722;padding:1px 6px;border-radius:10px;border:1px solid var(--line2);white-space:nowrap;transition:all .3s}
+.gap-age.fresh{color:var(--green);border-color:rgba(47,214,123,.25)}
+.gap-age.stale{color:#f5c518;background:rgba(245,197,24,.12);border-color:rgba(245,197,24,.3)}
+.gap-age.dead{color:#ff6b78;background:rgba(255,107,120,.15);border-color:rgba(255,107,120,.35)}
+.gap-trend{font-size:8.5px;font-weight:800;line-height:1}
+.gap-trend.up{color:#ff6b78}
+.gap-trend.dn{color:var(--green)}
+.pill.heartbeat i{background:var(--green);box-shadow:0 0 6px var(--green)}
+.pill.heartbeat.stale i{background:#f5c518;box-shadow:0 0 6px #f5c518}
+.pill.heartbeat.dead i{background:#ff3b4a;box-shadow:0 0 6px #ff3b4a}
+.reconnect-btn{background:#2a1b24!important;color:#ff9ba6!important;border-color:#5c2332!important;cursor:pointer}
+.reconnect-btn:hover{background:#3d2030!important}
 </style>
 </head>
 <body>
@@ -263,6 +279,8 @@ tr.selected-driver td:first-child{box-shadow:inset 3px 0 0 var(--acc)}
   <div class="right">
     <span class="pill drs active" id="drs-pill" title="DRS System Status"><i></i><span id="drstxt">DRS</span></span>
     <span class="pill" id="live"><i></i><span id="livetxt">OFFLINE</span></span>
+    <span class="pill heartbeat hide-m" id="feed-hb" title="Feed Packet Freshness"><i></i><span id="feed-hbtxt">Syncing…</span></span>
+    <button class="pill reconnect-btn" id="reconnect-btn" style="display:none" title="Feed paused - click to reconnect">🔄 Reconnect</button>
     <span class="pill track" id="track">—</span>
     <button class="iconbtn" id="setbtn" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
       <div class="pop" id="pop" onclick="event.stopPropagation()">
@@ -606,6 +624,7 @@ tr.selected-driver td:first-child{box-shadow:inset 3px 0 0 var(--acc)}
 <script>
 const $ = (id) => document.getElementById(id);
 let S = {}, queue = [], delayMs = 0, gapMode = "gap", tab = "overview", season = null;
+let lastPacketTime = Date.now(), driverLastUpdate = {}, driverLastGaps = {}, driverGapTrend = {};
 let unitSpeed = localStorage.getItem("f1_unit_speed") || "kmh";
 let unitTemp = localStorage.getItem("f1_unit_temp") || "C";
 let radioVol = parseFloat(localStorage.getItem("f1_radio_vol") ?? "0.8");
@@ -664,14 +683,35 @@ let es, retryT;
 function connect() {
   clearTimeout(retryT);
   es = new EventSource("/api/live");
-  es.addEventListener("snapshot", (e) => { S = JSON.parse(e.data) || {}; queue = []; onState(true); });
-  es.addEventListener("feed", (e) => { const [t, d] = JSON.parse(e.data); queue.push({ at: Date.now(), t, d }); });
+  es.addEventListener("snapshot", (e) => {
+    lastPacketTime = Date.now();
+    S = JSON.parse(e.data) || {};
+    queue = [];
+    const now = Date.now();
+    order().forEach(n => { driverLastUpdate[n] = now; });
+    onState(true);
+  });
+  es.addEventListener("feed", (e) => {
+    lastPacketTime = Date.now();
+    const [t, d] = JSON.parse(e.data);
+    queue.push({ at: Date.now(), t, d });
+  });
   es.addEventListener("failure", () => { es.close(); setLive(false, "RECONNECTING"); retryT = setTimeout(connect, 15000); });
   es.onerror = () => {};
 }
 setInterval(() => {
   const cutoff = Date.now() - delayMs; let ch = false;
-  while (queue.length && queue[0].at <= cutoff) { const m = queue.shift(); S[m.t] = merge(S[m.t], m.d); ch = true; }
+  while (queue.length && queue[0].at <= cutoff) {
+    const m = queue.shift();
+    if (m.t === "TimingData" && m.d && m.d.Lines) {
+      const now = Date.now();
+      for (const n of Object.keys(m.d.Lines)) {
+        driverLastUpdate[n] = now;
+      }
+    }
+    S[m.t] = merge(S[m.t], m.d);
+    ch = true;
+  }
   if (ch) onState(false);
 }, 250);
 const isLive = () => ["Started", "Aborted"].includes((S.SessionStatus && S.SessionStatus.Status) || (S.SessionInfo && S.SessionInfo.SessionStatus));
@@ -720,6 +760,46 @@ function tickClock() {
     $("ttime").textContent = new Date(Date.now() + sign * (oh * 60 + om) * 60000).toISOString().slice(11, 19); }
 }
 setInterval(tickClock, 1000);
+function tickFeedHealth() {
+  const hb = $("feed-hb");
+  const hbtxt = $("feed-hbtxt");
+  const recBtn = $("reconnect-btn");
+  if (!hb || !hbtxt) return;
+
+  const diffSec = Math.floor((Date.now() - lastPacketTime) / 1000);
+  if (diffSec <= 6) {
+    hb.className = "pill heartbeat hide-m";
+    hbtxt.textContent = diffSec === 0 ? "Live (0s)" : `Live (${diffSec}s)`;
+    if (recBtn) recBtn.style.display = "none";
+  } else if (diffSec <= 18) {
+    hb.className = "pill heartbeat stale hide-m";
+    hbtxt.textContent = `Delay (${diffSec}s)`;
+    if (recBtn) recBtn.style.display = "none";
+  } else {
+    hb.className = "pill heartbeat dead hide-m";
+    hbtxt.textContent = `Feed paused (${diffSec}s)`;
+    if (recBtn) recBtn.style.display = "inline-flex";
+  }
+
+  if (tab === "overview") {
+    order().forEach(n => {
+      const row = towerCache.get(n);
+      if (row && row.gapAge) {
+        const ts = driverLastUpdate[n] || lastPacketTime;
+        const s = Math.floor((Date.now() - ts) / 1000);
+        let ageCls = "mono gap-age";
+        let ageText = s <= 1 ? "now" : `${s}s`;
+        if (s <= 4) ageCls += " fresh";
+        else if (s > 18 && s <= 45) { ageCls += " stale"; ageText = `⚠️ ${s}s`; }
+        else if (s > 45) { ageCls += " dead"; ageText = `⚠️ ${Math.floor(s/60)}m`; }
+        row.gapAge.className = ageCls;
+        row.gapAge.textContent = ageText;
+      }
+    });
+  }
+}
+setInterval(tickFeedHealth, 1000);
+
 
 // ---------- timing ----------
 const lines = () => (S.TimingData || {}).Lines || {};
@@ -2542,6 +2622,15 @@ document.querySelectorAll("#mobile-subnav button").forEach((b) => {
 
 window.telemetryEngine = new TelemetryEngine("telemetryCanvas");
 initStreamPlayer();
+const recBtn = $("reconnect-btn");
+if (recBtn) {
+  recBtn.onclick = () => {
+    if (es) es.close();
+    setLive(false, "RECONNECTING");
+    connect();
+  };
+}
+
 
 loadSeason(); connect();
 </script>

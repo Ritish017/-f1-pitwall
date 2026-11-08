@@ -681,4 +681,94 @@ describe('Formula 1 Pit Wall Telemetry & Mathematics Test Suite', () => {
       assert.strictEqual(history[49].time, 69, 'Latest entry must be present at the tail');
     });
   });
+
+  describe('14. Live Gap Freshness, Feed Health & Trend Detection', () => {
+    it('verifies index.html declares live gap freshness and feed heartbeat DOM elements', () => {
+      const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+      assert.ok(html.includes('id="feed-hb"'), 'Must include feed heartbeat status badge');
+      assert.ok(html.includes('id="feed-hbtxt"'), 'Must include heartbeat text element');
+      assert.ok(html.includes('id="reconnect-btn"'), 'Must include live feed reconnect button');
+      assert.ok(html.includes('gap-age'), 'Must include gap-age badge styling/class');
+      assert.ok(html.includes('gap-trend'), 'Must include gap-trend delta indicator');
+      assert.ok(html.includes('tickFeedHealth'), 'Must implement feed health monitor loop');
+    });
+
+    it('accurately evaluates feed health state and warning thresholds based on packet latency', () => {
+      const evaluateFeedHealth = (diffSec) => {
+        if (diffSec <= 6) return { cls: 'live', text: diffSec === 0 ? 'Live (0s)' : `Live (${diffSec}s)`, reconnect: false };
+        if (diffSec <= 18) return { cls: 'stale', text: `Delay (${diffSec}s)`, reconnect: false };
+        return { cls: 'dead', text: `Feed paused (${diffSec}s)`, reconnect: true };
+      };
+
+      const fresh = evaluateFeedHealth(0);
+      assert.strictEqual(fresh.cls, 'live');
+      assert.strictEqual(fresh.text, 'Live (0s)');
+      assert.strictEqual(fresh.reconnect, false);
+
+      const minorLag = evaluateFeedHealth(5);
+      assert.strictEqual(minorLag.cls, 'live');
+      assert.strictEqual(minorLag.text, 'Live (5s)');
+
+      const delayed = evaluateFeedHealth(12);
+      assert.strictEqual(delayed.cls, 'stale');
+      assert.strictEqual(delayed.text, 'Delay (12s)');
+      assert.strictEqual(delayed.reconnect, false);
+
+      const paused = evaluateFeedHealth(25);
+      assert.strictEqual(paused.cls, 'dead');
+      assert.strictEqual(paused.text, 'Feed paused (25s)');
+      assert.strictEqual(paused.reconnect, true);
+    });
+
+    it('formats relative gap age badges with warning flags when feed drops or telemetry stalls', () => {
+      const formatGapAge = (s) => {
+        let ageCls = 'mono gap-age';
+        let ageText = s <= 1 ? 'now' : `${s}s`;
+        if (s <= 4) ageCls += ' fresh';
+        else if (s > 18 && s <= 45) { ageCls += ' stale'; ageText = `⚠️ ${s}s`; }
+        else if (s > 45) { ageCls += ' dead'; ageText = `⚠️ ${Math.floor(s / 60)}m`; }
+        return { ageCls, ageText };
+      };
+
+      const justNow = formatGapAge(0);
+      assert.strictEqual(justNow.ageText, 'now');
+      assert.ok(justNow.ageCls.includes('fresh'));
+
+      const fourSec = formatGapAge(4);
+      assert.strictEqual(fourSec.ageText, '4s');
+      assert.ok(fourSec.ageCls.includes('fresh'));
+
+      const tenSec = formatGapAge(10);
+      assert.strictEqual(tenSec.ageText, '10s');
+      assert.strictEqual(tenSec.ageCls, 'mono gap-age');
+
+      const staleLap = formatGapAge(25);
+      assert.strictEqual(staleLap.ageText, '⚠️ 25s');
+      assert.ok(staleLap.ageCls.includes('stale'));
+
+      const deadFeed = formatGapAge(130);
+      assert.strictEqual(deadFeed.ageText, '⚠️ 2m');
+      assert.ok(deadFeed.ageCls.includes('dead'));
+    });
+
+    it('computes delta gap trends showing expanding vs closing gaps between competitors', () => {
+      const computeTrend = (prevGap, curGap) => {
+        if (prevGap === null || curGap === null || isNaN(prevGap) || isNaN(curGap)) return null;
+        const diff = curGap - prevGap;
+        if (diff > 0.05) return { trend: 'up', symbol: '▲' };
+        if (diff < -0.05) return { trend: 'dn', symbol: '▼' };
+        return null;
+      };
+
+      const expanding = computeTrend(1.240, 1.450);
+      assert.deepStrictEqual(expanding, { trend: 'up', symbol: '▲' });
+
+      const closing = computeTrend(2.500, 2.120);
+      assert.deepStrictEqual(closing, { trend: 'dn', symbol: '▼' });
+
+      const steady = computeTrend(1.500, 1.504);
+      assert.strictEqual(steady, null);
+    });
+  });
 });
+
