@@ -2307,10 +2307,10 @@ function renderWeatherRadar() {
   if (!w) return;
 
   const tt = $("weatherTrackVal"), at = $("weatherAirVal"), hum = $("weatherHumVal"), wind = $("weatherWindVal");
-  if (tt) tt.textContent = formatTemp(w.TrackTemp);
-  if (at) at.textContent = formatTemp(w.AirTemp);
+  if (tt) tt.textContent = fmtTemp(w.TrackTemp);
+  if (at) at.textContent = fmtTemp(w.AirTemp);
   if (hum) hum.textContent = Math.round(parseFloat(w.Humidity) || 0) + "%";
-  if (wind) wind.textContent = formatSpeed(parseFloat(w.WindSpeed) * 3.6);
+  if (wind) wind.textContent = fmtSpeed(parseFloat(w.WindSpeed) * 3.6);
 
   const rainStatus = $("weatherRainStatus");
   if (rainStatus) {
