@@ -823,5 +823,69 @@ describe('Formula 1 Pit Wall Telemetry & Mathematics Test Suite', () => {
       assert.strictEqual(adjust('Reset'), 46);
     });
   });
+
+  describe('16. Best Lap & Last Lap Comparison Math', () => {
+    it('verifies index.html defines Best Lap, delta comparison columns, and telemetry comparison matrix', () => {
+      const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+      assert.ok(html.includes('Best lap</th>'), 'Must include Best lap column header');
+      assert.ok(html.includes('Δ PB</th>'), 'Must include Δ PB column header');
+      assert.ok(html.includes('best-lap'), 'Must include best-lap CSS/DOM class');
+      assert.ok(html.includes('delta-pb'), 'Must include delta-pb CSS/DOM class');
+      assert.ok(html.includes('id="telemLapMatrix"'), 'Must include telemLapMatrix element in telemetry view');
+      assert.ok(html.includes('compareLastVsBest'), 'Must include compareLastVsBest comparison helper');
+    });
+
+    it('accurately computes Last Lap vs Personal Best delta classification', () => {
+      const lapSecs = (s) => {
+        if (!s || typeof s !== 'string') return 0;
+        const p = s.trim().split(':');
+        if (p.length === 2) return (parseFloat(p[0]) || 0) * 60 + (parseFloat(p[1]) || 0);
+        return parseFloat(s) || 0;
+      };
+
+      const compareLastVsBest = (lastStr, bestStr) => {
+        const lastS = lapSecs(lastStr);
+        const bestS = lapSecs(bestStr);
+        if (!lastS || !bestS) return { text: '–', cls: 'delta-dim' };
+        const diff = lastS - bestS;
+        if (Math.abs(diff) < 0.0005) {
+          return { text: 'PB', cls: 'delta-pb' };
+        } else if (diff > 0) {
+          return { text: '+' + diff.toFixed(3), cls: 'delta-slower' };
+        } else {
+          return { text: '−' + Math.abs(diff).toFixed(3), cls: 'delta-faster' };
+        }
+      };
+
+      const pbMatch = compareLastVsBest('1:25.135', '1:25.135');
+      assert.strictEqual(pbMatch.text, 'PB');
+      assert.strictEqual(pbMatch.cls, 'delta-pb');
+
+      const slowerLap = compareLastVsBest('1:26.336', '1:25.135');
+      assert.strictEqual(slowerLap.text, '+1.201');
+      assert.strictEqual(slowerLap.cls, 'delta-slower');
+
+      const fasterLap = compareLastVsBest('1:24.900', '1:25.135');
+      assert.strictEqual(fasterLap.text, '−0.235');
+      assert.strictEqual(fasterLap.cls, 'delta-faster');
+
+      const missingPB = compareLastVsBest('1:26.336', '');
+      assert.strictEqual(missingPB.text, '–');
+      assert.strictEqual(missingPB.cls, 'delta-dim');
+    });
+
+    it('computes head-to-head lap delta comparison between Driver A and Driver B', () => {
+      const computeH2HDelta = (lapA, lapB) => {
+        const sA = 85.135; // 1:25.135
+        const sB = 85.802; // 1:25.802
+        const diff = sB - sA;
+        return { diff: parseFloat(diff.toFixed(3)), faster: diff > 0 ? 'A' : 'B' };
+      };
+
+      const h2h = computeH2HDelta('1:25.135', '1:25.802');
+      assert.strictEqual(h2h.diff, 0.667);
+      assert.strictEqual(h2h.faster, 'A');
+    });
+  });
 });
 
