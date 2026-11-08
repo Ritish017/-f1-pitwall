@@ -915,13 +915,6 @@ setInterval(tickFeedHealth, 1000);
 // ---------- timing ----------
 const lines = () => (S.TimingData || {}).Lines || {};
 
-function lapSecs(s) {
-  if (!s || typeof s !== "string") return 0;
-  const p = s.trim().split(":");
-  if (p.length === 2) return (parseFloat(p[0]) || 0) * 60 + (parseFloat(p[1]) || 0);
-  return parseFloat(s) || 0;
-}
-
 function compareLastVsBest(lastStr, bestStr) {
   const lastS = lapSecs(lastStr);
   const bestS = lapSecs(bestStr);
