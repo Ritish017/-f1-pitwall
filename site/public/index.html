@@ -240,6 +240,17 @@ footer{color:var(--dim);font-size:11.5px;padding:0 22px 26px;max-width:1800px;ma
 .pit-rank.gold{color:#ffd166}
 .pit-rank.silver{color:#e0e0e0}
 .pit-rank.bronze{color:#cd7f32}
+/* Modal & Keyboard shortcuts */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);z-index:99;display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-box{background:var(--panel2);border:1px solid var(--line);border-radius:18px;width:380px;max-width:92vw;box-shadow:0 30px 80px rgba(0,0,0,.8);overflow:hidden}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line)}
+.modal-body{padding:14px 18px;display:flex;flex-direction:column;gap:10px}
+.shortcut-row{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;color:var(--txt)}
+kbd{background:#2a2533;border:1px solid #4a3e5c;border-radius:6px;padding:3px 8px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--acc)}
+tr.selected-driver{background:rgba(205,178,255,.12)!important}
+tr.selected-driver td:first-child{box-shadow:inset 3px 0 0 var(--acc)}
+#tower tr{cursor:pointer}
 </style>
 </head>
 <body>
@@ -288,6 +299,7 @@ footer{color:var(--dim);font-size:11.5px;padding:0 22px 26px;max-width:1800px;ma
         </div>
       </div></button>
     <button class="iconbtn" id="streambtn" title="Live Video / Stream Sync" aria-label="Live Video / Stream Sync"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="15" rx="2.5"/><polygon points="10 8 16 11.5 10 15 10 8" fill="currentColor"/></svg></button>
+    <button class="iconbtn hide-m" id="helpbtn" title="Keyboard Shortcuts (?)" aria-label="Keyboard Shortcuts" style="font-weight:800;font-size:14px">?</button>
     <button class="iconbtn hide-m" id="fsbtn" title="Fullscreen" aria-label="Fullscreen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
   </div>
 </header>
@@ -570,6 +582,25 @@ footer{color:var(--dim);font-size:11.5px;padding:0 22px 26px;max-width:1800px;ma
     <div class="card"><div class="ch"><h2>Constructors' <em>championship</em></h2></div><div class="scroll"><table><tbody id="cstand"></tbody></table></div></div>
   </div>
 </section>
+<div class="modal-overlay" id="helpModal" onclick="this.classList.remove('open')">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <b>⌨️ Keyboard Shortcuts</b>
+      <button class="iconbtn-sm" onclick="$('helpModal').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="shortcut-row"><kbd>1</kbd> <span>Switch to <b>Overview</b></span></div>
+      <div class="shortcut-row"><kbd>2</kbd> <span>Switch to <b>Telemetry</b></span></div>
+      <div class="shortcut-row"><kbd>3</kbd> <span>Switch to <b>Strategy</b></span></div>
+      <div class="shortcut-row"><kbd>4</kbd> <span>Switch to <b>Analysis</b></span></div>
+      <div class="shortcut-row"><kbd>5</kbd> <span>Switch to <b>Season</b></span></div>
+      <div class="shortcut-row"><kbd>V</kbd> <span>Toggle <b>Live Video / Stream Sync</b></span></div>
+      <div class="shortcut-row"><kbd>F</kbd> <span>Toggle <b>Fullscreen</b></span></div>
+      <div class="shortcut-row"><kbd>M</kbd> <span>Toggle <b>Team Radio Mute</b></span></div>
+      <div class="shortcut-row"><kbd>?</kbd> <span>Show / Hide this shortcuts cheat sheet</span></div>
+    </div>
+  </div>
+</div>
 <footer>Pit Wall is a personal, non-commercial fan project built on F1's public live timing feed. Not affiliated with Formula 1. Track positions are estimated from mini-sector timing, not GPS.</footer>
 
 <script>
@@ -746,6 +777,26 @@ function stintsOf(n) { return vals((((S.TimingAppData || {}).Lines || {})[n] || 
 const towerCache = new Map();
 const WEAR_LIMITS = { SOFT: 18, MEDIUM: 26, HARD: 36, INTERMEDIATE: 22, WET: 25 };
 
+let focusedDriver = null;
+function selectDriverFocus(n) {
+  focusedDriver = n;
+  const drvASel = $("telemDrvA");
+  if (drvASel) {
+    drvASel.value = n;
+    if (window.telemetryEngine) {
+      window.telemetryEngine.driverA = n;
+      window.telemetryEngine.render();
+    }
+  }
+  simDrv = n;
+  const simSel = $("simdrv");
+  if (simSel) simSel.value = n;
+  hl.add(n);
+  document.querySelectorAll("#tower tr").forEach((r) => r.classList.remove("selected-driver"));
+  const rowObj = towerCache.get(n);
+  if (rowObj && rowObj.tr) rowObj.tr.classList.add("selected-driver");
+}
+
 function renderTower() {
   const td = lines(), dl = S.DriverList || {}, nums = order();
   const tbody = $("tower");
@@ -826,6 +877,9 @@ function renderTower() {
         trap: tr.querySelector(".trap-cell"),
         state: {}
       };
+      tr.style.cursor = "pointer";
+      tr.title = "Click to focus driver in Telemetry & Strategy";
+      tr.onclick = () => selectDriverFocus(n);
       row.tb.style.background = "#" + (d.TeamColour || "666");
       row.tla.textContent = d.Tla || n;
       row.ln.textContent = lastName(d);
@@ -2357,8 +2411,9 @@ function onState(force) {
   if (tab === "season") renderSeason();
 }
 
-document.querySelectorAll("#tabs button").forEach((b) => b.onclick = () => {
-  tab = b.dataset.tab; document.querySelectorAll("#tabs button").forEach((x) => x.classList.toggle("on", x === b));
+function switchTab(newTab) {
+  tab = newTab;
+  document.querySelectorAll("#tabs button").forEach((x) => x.classList.toggle("on", x.dataset.tab === tab));
   ["overview", "telemetry", "strategy", "analysis", "season"].forEach((t) => {
     const el = $("tab-" + t);
     if (el) el.classList.toggle("hidden", t !== tab);
@@ -2366,6 +2421,44 @@ document.querySelectorAll("#tabs button").forEach((b) => b.onclick = () => {
   radioKey = "";
   if (tab === "telemetry" && window.telemetryEngine) window.telemetryEngine.update();
   onState(true);
+}
+
+document.querySelectorAll("#tabs button").forEach((b) => b.onclick = () => switchTab(b.dataset.tab));
+
+const helpBtn = $("helpbtn");
+if (helpBtn) {
+  helpBtn.onclick = () => {
+    const m = $("helpModal");
+    if (m) m.classList.toggle("open");
+  };
+}
+
+window.addEventListener("keydown", (e) => {
+  if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.target.tagName === "TEXTAREA") return;
+  const key = e.key.toLowerCase();
+  if (key === "1") switchTab("overview");
+  else if (key === "2") switchTab("telemetry");
+  else if (key === "3") switchTab("strategy");
+  else if (key === "4") switchTab("analysis");
+  else if (key === "5") switchTab("season");
+  else if (key === "v") {
+    const p = $("streamPanel");
+    if (p) p.classList.toggle("open");
+  } else if (key === "f") {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen();
+  } else if (key === "m") {
+    const b = $("btn-radio-mute");
+    if (b) b.click();
+  } else if (key === "?" || (e.shiftKey && key === "/")) {
+    const m = $("helpModal");
+    if (m) m.classList.toggle("open");
+  } else if (key === "escape") {
+    const m = $("helpModal");
+    if (m) m.classList.remove("open");
+    const p = $("streamPanel");
+    if (p) p.classList.remove("open");
+  }
 });
 
 $("setbtn").onclick = (e) => { e.stopPropagation(); $("pop").classList.toggle("on"); };
