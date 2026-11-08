@@ -1,0 +1,15 @@
+{
+  "name": "f1-pitwall",
+  "version": "1.0.0",
+  "description": "Live Formula 1 Race Intelligence & Telemetry Dashboard",
+  "private": true,
+  "scripts": {
+    "start": "node site/server.js",
+    "build": "node -e \"console.log('Build OK: Static SPA ready')\"",
+    "test": "cd site && npm test",
+    "lint": "cd site && npm run lint"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

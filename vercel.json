@@ -1,0 +1,8 @@
+{
+  "outputDirectory": "site/public",
+  "functions": {
+    "api/live.js": { "maxDuration": 120 },
+    "api/info.js": { "maxDuration": 30 },
+    "api/circuit.js": { "maxDuration": 20 }
+  }
+}
