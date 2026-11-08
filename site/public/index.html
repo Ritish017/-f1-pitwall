@@ -369,7 +369,8 @@ tr.selected-driver td:first-child{box-shadow:inset 3px 0 0 var(--acc)}
     <span class="pill heartbeat hide-m" id="feed-hb" title="Feed Packet Freshness"><i></i><span id="feed-hbtxt">Syncing…</span></span>
     <button class="pill reconnect-btn" id="reconnect-btn" style="display:none" title="Feed paused - click to reconnect">🔄 Reconnect</button>
     <span class="pill track" id="track">—</span>
-    <button class="iconbtn" id="setbtn" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+    <div class="set-wrap" style="position:relative;display:inline-flex;align-items:center">
+      <button class="iconbtn" id="setbtn" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg></button>
       <div class="pop" id="pop" onclick="event.stopPropagation()">
         <div class="pop-title"><b>Pitwall Settings</b></div>
         <div class="pop-group">
@@ -402,7 +403,8 @@ tr.selected-driver td:first-child{box-shadow:inset 3px 0 0 var(--acc)}
           </div>
           <small style="color:var(--dim);font-size:11px;display:block;margin-top:4px">Hold telemetry back to sync with broadcast delay.</small>
         </div>
-      </div></button>
+      </div>
+    </div>
     <button class="iconbtn" id="streambtn" title="Live Video / Stream Sync" aria-label="Live Video / Stream Sync"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="15" rx="2.5"/><polygon points="10 8 16 11.5 10 15 10 8" fill="currentColor"/></svg></button>
     <button class="iconbtn hide-m" id="helpbtn" title="Keyboard Shortcuts (?)" aria-label="Keyboard Shortcuts" style="font-weight:800;font-size:14px">?</button>
     <button class="iconbtn hide-m" id="fsbtn" title="Fullscreen" aria-label="Fullscreen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
