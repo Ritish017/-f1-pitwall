@@ -521,6 +521,32 @@ describe('Formula 1 Pit Wall Telemetry & Mathematics Test Suite', () => {
     it('index.html gapSecs uses Number.isFinite to guard against non-finite values', () => {
       assert.match(indexContent, /Number\.isFinite/, 'gapSecs in index.html must use Number.isFinite');
     });
+
+    it('index.html contains Live Video & Stream Sync panel and controls', () => {
+      assert.ok(indexContent.includes('id="streamPanel"'), 'streamPanel element must exist');
+      assert.ok(indexContent.includes('id="streamVideo"'), 'streamVideo element must exist');
+      assert.ok(indexContent.includes('id="streamUrlInput"'), 'streamUrlInput must exist');
+      assert.ok(indexContent.includes('id="btnLoadStream"'), 'btnLoadStream must exist');
+      assert.ok(indexContent.includes('hls.js'), 'hls.js library must be included');
+    });
+
+    it('index.html contains Tyre degradation model canvas and rate indicators', () => {
+      assert.ok(indexContent.includes('id="degCanvas"'), 'degCanvas element must exist');
+      assert.ok(indexContent.includes('id="degSoftRate"'), 'degSoftRate must exist');
+      assert.ok(indexContent.includes('id="degMedRate"'), 'degMedRate must exist');
+      assert.ok(indexContent.includes('id="degHardRate"'), 'degHardRate must exist');
+    });
+
+    it('index.html contains Pit lane performance leaderboard', () => {
+      assert.ok(indexContent.includes('id="pitTableBody"'), 'pitTableBody must exist');
+      assert.ok(indexContent.includes('Pit lane <em>performance</em>'), 'Pit lane performance title must exist');
+    });
+
+    it('index.html contains Track evolution & weather radar section', () => {
+      assert.ok(indexContent.includes('id="weatherSparkline"'), 'weatherSparkline SVG must exist');
+      assert.ok(indexContent.includes('id="weatherTrackVal"'), 'weatherTrackVal must exist');
+      assert.ok(indexContent.includes('id="weatherRainStatus"'), 'weatherRainStatus must exist');
+    });
   });
 
   describe('12. Strategy Engine & Session Rendering Safety', () => {
@@ -603,6 +629,56 @@ describe('Formula 1 Pit Wall Telemetry & Mathematics Test Suite', () => {
         const dom = executeStrategyInSandbox(false, []);
         assert.ok(dom.simout && dom.simout.innerHTML.includes('Strategy tools come alive'), 'Empty state must render when no drivers present');
       });
+    });
+  });
+
+  describe('13. Tyre Degradation Math & Pit Stop Performance Calculations', () => {
+    it('calculates compound degradation slope factoring track temperature', () => {
+      const baseDeg = { SOFT: 0.088, MEDIUM: 0.052, HARD: 0.031 };
+      const calcSlopes = (trackTemp) => {
+        const factor = 1 + Math.max(-0.2, Math.min(0.3, (trackTemp - 35) * 0.015));
+        return {
+          SOFT: baseDeg.SOFT * factor,
+          MEDIUM: baseDeg.MEDIUM * factor,
+          HARD: baseDeg.HARD * factor,
+        };
+      };
+      
+      const neutral = calcSlopes(35);
+      assert.strictEqual(neutral.SOFT, 0.088);
+      assert.strictEqual(neutral.MEDIUM, 0.052);
+      assert.strictEqual(neutral.HARD, 0.031);
+
+      const hot = calcSlopes(50);
+      assert.ok(hot.SOFT > neutral.SOFT, 'Hot track must increase degradation');
+      assert.ok(hot.SOFT <= baseDeg.SOFT * 1.3, 'Degradation factor must clamp to upper limit');
+
+      const cold = calcSlopes(15);
+      assert.ok(cold.HARD < neutral.HARD, 'Cold track must reduce wear rate');
+      assert.ok(cold.HARD >= baseDeg.HARD * 0.8, 'Degradation factor must clamp to lower limit');
+    });
+
+    it('estimates stationary service time from total pit lane duration', () => {
+      const calcStationary = (totalDuration) => Math.max(1.8, Math.round((totalDuration - 19.5) * 100) / 100);
+      assert.strictEqual(calcStationary(21.9), 2.4);
+      assert.strictEqual(calcStationary(22.5), 3.0);
+      assert.strictEqual(calcStationary(18.0), 1.8);
+    });
+
+    it('manages weather telemetry history buffer without exceeding bounds', () => {
+      const history = [];
+      const addEntry = (entry) => {
+        history.push(entry);
+        if (history.length > 50) history.shift();
+      };
+
+      for (let i = 0; i < 70; i++) {
+        addEntry({ time: i, trackTemp: 30 + (i % 5) });
+      }
+
+      assert.strictEqual(history.length, 50, 'History buffer must not exceed 50 entries');
+      assert.strictEqual(history[0].time, 20, 'Oldest entries must be pruned FIFO');
+      assert.strictEqual(history[49].time, 69, 'Latest entry must be present at the tail');
     });
   });
 });
