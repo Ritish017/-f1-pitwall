@@ -793,7 +793,21 @@ function fmtSecs(s) {
 let es, retryT;
 function connect() {
   clearTimeout(retryT);
+  if (es) {
+    try { es.close(); } catch (_) {}
+  }
   es = new EventSource("/api/live");
+  es.onopen = () => {
+    lastPacketTime = Date.now();
+    const hb = $("feed-hb");
+    const hbtxt = $("feed-hbtxt");
+    const recBtn = $("reconnect-btn");
+    if (hb && hbtxt) {
+      hb.className = "pill heartbeat hide-m";
+      hbtxt.textContent = "Live (0s)";
+    }
+    if (recBtn) recBtn.style.display = "none";
+  };
   es.addEventListener("snapshot", (e) => {
     lastPacketTime = Date.now();
     S = JSON.parse(e.data) || {};
@@ -809,19 +823,28 @@ function connect() {
   });
   es.addEventListener("heartbeat", () => {
     lastPacketTime = Date.now();
+    const hb = $("feed-hb");
+    const hbtxt = $("feed-hbtxt");
+    const recBtn = $("reconnect-btn");
+    if (hb && hbtxt) {
+      hb.className = "pill heartbeat hide-m";
+      hbtxt.textContent = "Live (0s)";
+    }
+    if (recBtn) recBtn.style.display = "none";
     if (!live) setLive(true, isRace() ? "RACE" : (S.SessionInfo ? S.SessionInfo.Type || "LIVE" : "LIVE"));
   });
   es.addEventListener("failure", () => {
-    es.close();
+    try { es.close(); } catch (_) {}
     setLive(false, "RECONNECTING");
     clearTimeout(retryT);
-    retryT = setTimeout(connect, 2000);
+    retryT = setTimeout(connect, 1500);
   });
   es.onerror = () => {
-    if (es && es.readyState === EventSource.CLOSED) {
-      clearTimeout(retryT);
-      retryT = setTimeout(connect, 1500);
-    }
+    clearTimeout(retryT);
+    retryT = setTimeout(() => {
+      try { if (es) es.close(); } catch (_) {}
+      connect();
+    }, 2000);
   };
 }
 setInterval(() => {
@@ -904,8 +927,8 @@ function tickFeedHealth() {
     hb.className = "pill heartbeat dead hide-m";
     hbtxt.textContent = `Feed paused (${diffSec}s)`;
     if (recBtn) recBtn.style.display = "inline-flex";
-    if (diffSec > 35 && (!es || es.readyState !== EventSource.CONNECTING)) {
-      if (es) es.close();
+    if (diffSec > 28) {
+      try { if (es) es.close(); } catch (_) {}
       connect();
     }
   }
@@ -1497,11 +1520,13 @@ function frame(now) {
     for (const c of list) {
       const pace = c.inPit ? 400 : (c.pace || 95);
       if (live) {
-        // where the timing says the car should be by now (dead reckoning from the last mini-sector)
-        let target = c.anchorF + Math.min((now - c.anchorT) / 1000 / pace, (c.seg || 0.02) * 1.6);
+        // Continuous smooth dead-reckoning: advance car along the track according to its lap pace.
+        // Cap maximum extrapolation without an update to 35% of a lap (approx 1 sector) so car never freezes on straights.
+        const elapsed = (now - c.anchorT) / 1000;
+        let target = c.anchorF + Math.min(elapsed / pace, 0.35);
         let err = target - (c.f % 1); if (err < -0.5) err += 1; if (err > 0.5) err -= 1;
-        // steer speed instead of jumping: speed up when behind, ease off (never stop or reverse) when ahead
-        const k = Math.max(0.25, Math.min(2.2, 1 + err * pace / 3));
+        // Adaptive steering speed: smoothly adjust forward velocity without stalling
+        const k = Math.max(0.6, Math.min(1.6, 1 + err * pace / 4));
         c.f += dt / pace * k;
       }
       const f = c.f + c.off, p = pointAt(f), q = pointAt(f + 0.003);

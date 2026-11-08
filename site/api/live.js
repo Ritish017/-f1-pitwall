@@ -58,8 +58,22 @@ module.exports = async (req, res) => {
     setTimeout(() => { if (!done) { done = true; stop(); res.status(504).json({ ok: false, error: "timeout" }); } }, 15000);
     return;
   }
-  res.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache, no-transform", Connection: "keep-alive", "X-Accel-Buffering": "no" });
-  const send = (ev, data) => res.write(`event: ${ev}\ndata: ${JSON.stringify(data)}\n\n`);
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache, no-transform",
+    Connection: "keep-alive",
+    "X-Accel-Buffering": "no"
+  });
+  // Send initial 2KB SSE comment padding to disable any intermediate proxy or edge buffering
+  res.write(`: ${" ".repeat(2048)}\n\n`);
+  if (typeof res.flush === "function") res.flush();
+
+  const send = (ev, data) => {
+    try {
+      res.write(`event: ${ev}\ndata: ${JSON.stringify(data)}\n\n`);
+      if (typeof res.flush === "function") res.flush();
+    } catch (_) {}
+  };
   let ended = false;
   const end = () => { if (ended) return; ended = true; clearInterval(hb); clearTimeout(t); stop(); res.end(); };
   const stop = connect(
@@ -69,12 +83,17 @@ module.exports = async (req, res) => {
     () => { send("heartbeat", { t: Date.now() }); },
     null
   );
-  // Send active heartbeat event every 4s to keep connection open and prevent false pause triggers
+  // Send active heartbeat event every 2.5s to keep connection alive and prevent false pause triggers
   const hb = setInterval(() => {
     try {
       res.write(`event: heartbeat\ndata: ${Date.now()}\n\n`);
+      if (typeof res.flush === "function") res.flush();
     } catch (_) {}
-  }, 4000);
+  }, 2500);
+  if (hb.unref) hb.unref();
+
   const t = setTimeout(end, 110000); // client reconnects automatically
-  req.on("close", end);
+  if (t.unref) t.unref();
+
+  if (req.on) req.on("close", end);
 };
