@@ -14,7 +14,7 @@ async function negotiate() {
   return { token: j.connectionToken, cookies };
 }
 
-function connect(onSnapshot, onFeed, onError, topics) {
+function connect(onSnapshot, onFeed, onError, onPing, topics) {
   let ws, closed = false;
   negotiate().then(({ token, cookies }) => {
     ws = new WebSocket(`wss://${HOST}/signalrcore?id=${encodeURIComponent(token)}`,
@@ -34,6 +34,7 @@ function connect(onSnapshot, onFeed, onError, topics) {
           onFeed(m.arguments[0], m.arguments[1], m.arguments[2]);
         } else if (m.type === 6) {
           ws.send(JSON.stringify({ type: 6 }) + RS);
+          if (onPing) onPing();
         } else if (m.type === 7) {
           onError(new Error("closed by F1: " + (m.error || "")));
         }
@@ -61,9 +62,19 @@ module.exports = async (req, res) => {
   const send = (ev, data) => res.write(`event: ${ev}\ndata: ${JSON.stringify(data)}\n\n`);
   let ended = false;
   const end = () => { if (ended) return; ended = true; clearInterval(hb); clearTimeout(t); stop(); res.end(); };
-  const stop = connect((s) => send("snapshot", s), (topic, data, ts) => send("feed", [topic, data, ts]),
-    (e) => { send("failure", { error: String(e.message || e) }); end(); });
-  const hb = setInterval(() => res.write(": hb\n\n"), 15000);
+  const stop = connect(
+    (s) => send("snapshot", s),
+    (topic, data, ts) => send("feed", [topic, data, ts]),
+    (e) => { send("failure", { error: String(e.message || e) }); end(); },
+    () => { send("heartbeat", { t: Date.now() }); },
+    tp
+  );
+  // Send active heartbeat event every 4s to keep connection open and prevent false pause triggers
+  const hb = setInterval(() => {
+    try {
+      res.write(`event: heartbeat\ndata: ${Date.now()}\n\n`);
+    } catch (_) {}
+  }, 4000);
   const t = setTimeout(end, 110000); // client reconnects automatically
   req.on("close", end);
 };

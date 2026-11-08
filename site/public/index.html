@@ -807,8 +807,22 @@ function connect() {
     const [t, d] = JSON.parse(e.data);
     queue.push({ at: Date.now(), t, d });
   });
-  es.addEventListener("failure", () => { es.close(); setLive(false, "RECONNECTING"); retryT = setTimeout(connect, 15000); });
-  es.onerror = () => {};
+  es.addEventListener("heartbeat", () => {
+    lastPacketTime = Date.now();
+    if (!live) setLive(true, isRace() ? "RACE" : (S.SessionInfo ? S.SessionInfo.Type || "LIVE" : "LIVE"));
+  });
+  es.addEventListener("failure", () => {
+    es.close();
+    setLive(false, "RECONNECTING");
+    clearTimeout(retryT);
+    retryT = setTimeout(connect, 2000);
+  });
+  es.onerror = () => {
+    if (es && es.readyState === EventSource.CLOSED) {
+      clearTimeout(retryT);
+      retryT = setTimeout(connect, 1500);
+    }
+  };
 }
 setInterval(() => {
   const cutoff = Date.now() - delayMs; let ch = false;
@@ -878,11 +892,11 @@ function tickFeedHealth() {
   if (!hb || !hbtxt) return;
 
   const diffSec = Math.floor((Date.now() - lastPacketTime) / 1000);
-  if (diffSec <= 6) {
+  if (diffSec <= 10) {
     hb.className = "pill heartbeat hide-m";
     hbtxt.textContent = diffSec === 0 ? "Live (0s)" : `Live (${diffSec}s)`;
     if (recBtn) recBtn.style.display = "none";
-  } else if (diffSec <= 18) {
+  } else if (diffSec <= 25) {
     hb.className = "pill heartbeat stale hide-m";
     hbtxt.textContent = `Delay (${diffSec}s)`;
     if (recBtn) recBtn.style.display = "none";
@@ -890,6 +904,10 @@ function tickFeedHealth() {
     hb.className = "pill heartbeat dead hide-m";
     hbtxt.textContent = `Feed paused (${diffSec}s)`;
     if (recBtn) recBtn.style.display = "inline-flex";
+    if (diffSec > 35 && (!es || es.readyState !== EventSource.CONNECTING)) {
+      if (es) es.close();
+      connect();
+    }
   }
 
   if (tab === "overview") {

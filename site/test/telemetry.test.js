@@ -695,8 +695,8 @@ describe('Formula 1 Pit Wall Telemetry & Mathematics Test Suite', () => {
 
     it('accurately evaluates feed health state and warning thresholds based on packet latency', () => {
       const evaluateFeedHealth = (diffSec) => {
-        if (diffSec <= 6) return { cls: 'live', text: diffSec === 0 ? 'Live (0s)' : `Live (${diffSec}s)`, reconnect: false };
-        if (diffSec <= 18) return { cls: 'stale', text: `Delay (${diffSec}s)`, reconnect: false };
+        if (diffSec <= 10) return { cls: 'live', text: diffSec === 0 ? 'Live (0s)' : `Live (${diffSec}s)`, reconnect: false };
+        if (diffSec <= 25) return { cls: 'stale', text: `Delay (${diffSec}s)`, reconnect: false };
         return { cls: 'dead', text: `Feed paused (${diffSec}s)`, reconnect: true };
       };
 
@@ -705,18 +705,18 @@ describe('Formula 1 Pit Wall Telemetry & Mathematics Test Suite', () => {
       assert.strictEqual(fresh.text, 'Live (0s)');
       assert.strictEqual(fresh.reconnect, false);
 
-      const minorLag = evaluateFeedHealth(5);
+      const minorLag = evaluateFeedHealth(8);
       assert.strictEqual(minorLag.cls, 'live');
-      assert.strictEqual(minorLag.text, 'Live (5s)');
+      assert.strictEqual(minorLag.text, 'Live (8s)');
 
-      const delayed = evaluateFeedHealth(12);
+      const delayed = evaluateFeedHealth(18);
       assert.strictEqual(delayed.cls, 'stale');
-      assert.strictEqual(delayed.text, 'Delay (12s)');
+      assert.strictEqual(delayed.text, 'Delay (18s)');
       assert.strictEqual(delayed.reconnect, false);
 
-      const paused = evaluateFeedHealth(25);
+      const paused = evaluateFeedHealth(30);
       assert.strictEqual(paused.cls, 'dead');
-      assert.strictEqual(paused.text, 'Feed paused (25s)');
+      assert.strictEqual(paused.text, 'Feed paused (30s)');
       assert.strictEqual(paused.reconnect, true);
     });
 
