@@ -67,7 +67,7 @@ module.exports = async (req, res) => {
     (topic, data, ts) => send("feed", [topic, data, ts]),
     (e) => { send("failure", { error: String(e.message || e) }); end(); },
     () => { send("heartbeat", { t: Date.now() }); },
-    tp
+    null
   );
   // Send active heartbeat event every 4s to keep connection open and prevent false pause triggers
   const hb = setInterval(() => {

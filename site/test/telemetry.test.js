@@ -419,6 +419,23 @@ describe('Formula 1 Pit Wall Telemetry & Mathematics Test Suite', () => {
   describe('10. Server Endpoint API Contract Tests', () => {
     const circuitHandler = require('../api/circuit');
 
+    it('/api/live initializes SSE stream without throwing ReferenceError', () => {
+      const liveHandler = require('../api/live');
+      let status = 0;
+      const written = [];
+      const mockReq = { url: '/api/live', on: () => {} };
+      const mockRes = {
+        writeHead: (code) => { status = code; },
+        write: (d) => { written.push(d); },
+        end: () => {}
+      };
+
+      assert.doesNotThrow(() => {
+        liveHandler(mockReq, mockRes);
+      });
+      assert.strictEqual(status, 200, 'Must respond with HTTP 200 text/event-stream');
+    });
+
     it('/api/circuit returns 400 when key query parameter is missing', async () => {
       let statusCode = 0;
       let responseBody = null;
