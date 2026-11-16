@@ -302,6 +302,11 @@ footer{color:var(--dim);font-size:11.5px;padding:0 22px 26px;max-width:1800px;ma
 .stream-ctrls{display:flex;align-items:center;gap:6px}
 .stream-body{display:flex;flex-direction:column;background:#000;position:relative}
 #streamVideo{width:100%;aspect-ratio:16/9;background:#060508;display:block}
+.stream-twitch{width:100%;aspect-ratio:16/9;background:#18181b;display:none;border:0}
+.stream-body.twitch #streamVideo{display:none}
+.stream-body.twitch .stream-twitch{display:block}
+.stream-vpn-hint{display:none;font-size:10.5px;color:var(--warn,#f5c518);background:rgba(245,197,24,.08);border:1px solid rgba(245,197,24,.35);border-radius:8px;padding:6px 9px;margin-top:8px;font-weight:600}
+.stream-vpn-hint.show{display:block}
 .stream-status-overlay{position:absolute;top:10px;left:10px;font-size:10px;font-weight:800;letter-spacing:.08em;background:rgba(0,0,0,.65);padding:3px 8px;border-radius:10px;color:var(--acc);pointer-events:none}
 .stream-footer{padding:12px 14px;display:flex;flex-direction:column;gap:10px;background:var(--panel)}
 .stream-url-row{display:flex;gap:6px}
@@ -420,6 +425,7 @@ tr.selected-driver td:first-child{box-shadow:inset 3px 0 0 var(--acc)}
   </div>
   <div class="stream-body">
     <video id="streamVideo" controls playsinline></video>
+    <iframe id="streamTwitch" class="stream-twitch" src="about:blank" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowfullscreen title="Live stream"></iframe>
     <div class="stream-status-overlay" id="streamStatus">NO STREAM LOADED</div>
   </div>
   <div class="stream-footer">
@@ -439,10 +445,12 @@ tr.selected-driver td:first-child{box-shadow:inset 3px 0 0 var(--acc)}
     </div>
     <div class="stream-presets-row">
       <span class="eyebrow" style="font-size:9.5px">Presets:</span>
+      <button class="chip-sm" data-preset-stream="f1-live">F1 Live</button>
       <button class="chip-sm" data-preset-stream="test-hls">Test HLS</button>
       <button class="chip-sm" data-preset-stream="test-mp4">Sample MP4</button>
       <button class="chip-sm" data-preset-stream="clear">Clear</button>
     </div>
+    <div class="stream-vpn-hint" id="streamVpnHint">⚠ F1 live is geo-restricted — if it won't play, turn on a <b>Brazil VPN</b> and reload.</div>
   </div>
 </div>
 <div class="stats">
@@ -2428,6 +2436,67 @@ setInterval(() => nextRace && renderNext(), 30000);
 let hlsInstance = null;
 let streamOffsetSec = 0;
 
+// Twitch channel that carries the F1 live stream (geo-restricted, plays with a Brazil VPN).
+const F1_TWITCH_CHANNEL = "adiiixexe";
+const F1_STREAM_HOSTS = ["f1net1.dpdns.org", "f1net.dpdns.org", "www.f1net.dpdns.org", "f1net.vercel.app"];
+
+function setStreamStatus(msg, kind) {
+  const el = $("streamStatus");
+  if (el) {
+    el.textContent = msg;
+    if (kind) el.style.color = kind === "warn" ? "#f5c518" : kind === "err" ? "#ff6b78" : "var(--acc)";
+    else el.style.color = "var(--acc)";
+  }
+}
+
+function showVpnHint(show) {
+  const el = $("streamVpnHint");
+  if (el) el.classList.toggle("show", !!show);
+}
+
+function isF1Source(url) {
+  try {
+    const u = new URL(url.includes("://") ? url : "https://" + url);
+    return F1_STREAM_HOSTS.includes(u.hostname) || /\/stream\/(fullhd|fhd|main|live)/i.test(u.pathname);
+  } catch (e) { return false; }
+}
+
+function twitchChannelOf(url) {
+  // Accept: twitch:adiiixexe , a bare channel name, twitch.tv/adiiixexe , or any f1net stream source.
+  let t = url.trim();
+  if (/^twitch:/i.test(t)) t = t.slice(7);
+  const m = t.match(/twitch\.tv\/([a-zA-Z0-9_]{2,})/i);
+  if (m) return m[1];
+  if (isF1Source(url)) return F1_TWITCH_CHANNEL;
+  if (/^[a-zA-Z0-9_]{2,}$/.test(t)) return t;
+  return null;
+}
+
+function loadTwitchPlayer(channel) {
+  const video = $("streamVideo");
+  const twitch = $("streamTwitch");
+  const body = twitch ? twitch.parentElement : null;
+  if (!twitch) return false;
+  // Twitch embed requires a matching parent host; use the host the page is served from.
+  const parent = encodeURIComponent(location.hostname || "localhost");
+  const host = (location.protocol === "https:" ? "https" : "http") + "://player.twitch.tv/?channel=" + encodeURIComponent(channel) + "&parent=" + parent + "&muted=false&autoplay=true";
+  if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
+  if (video) { video.pause(); video.removeAttribute("src"); video.load(); }
+  twitch.src = host;
+  if (body) body.classList.add("twitch");
+  showVpnHint(true);
+  setStreamStatus("F1 LIVE (Twitch)");
+  return true;
+}
+
+function clearTwitchPlayer() {
+  const twitch = $("streamTwitch");
+  const body = twitch ? twitch.parentElement : null;
+  if (twitch) twitch.src = "about:blank";
+  if (body) body.classList.remove("twitch");
+  showVpnHint(false);
+}
+
 function initStreamPlayer() {
   const video = $("streamVideo");
   const input = $("streamUrlInput");
@@ -2441,15 +2510,19 @@ function initStreamPlayer() {
 
   if (streamBtn && streamPanel) {
     streamBtn.onclick = () => {
+      const opening = !streamPanel.classList.contains("open");
       streamPanel.classList.toggle("open");
-      if (streamPanel.classList.contains("open") && video && !video.src && input && input.value) {
+      if (opening && input && input.value) {
         loadStream(input.value);
       }
     };
   }
 
   if (btnClose && streamPanel) {
-    btnClose.onclick = () => streamPanel.classList.remove("open");
+    btnClose.onclick = () => {
+      streamPanel.classList.remove("open");
+      clearTwitchPlayer();
+    };
   }
 
   if (btnPip && video) {
@@ -2484,12 +2557,14 @@ function initStreamPlayer() {
         input.value = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8";
       } else if (p === "test-mp4") {
         input.value = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+      } else if (p === "f1-live") {
+        input.value = "f1net1.dpdns.org/stream/fullhd1";
       } else if (p === "clear") {
         input.value = "";
-        if (video) { video.pause(); video.src = ""; }
+        if (video) { video.pause(); video.removeAttribute("src"); video.load(); }
         if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
-        const statusEl = $("streamStatus");
-        if (statusEl) statusEl.textContent = "NO STREAM LOADED";
+        clearTwitchPlayer();
+        setStreamStatus("NO STREAM LOADED");
         localStorage.removeItem("f1_stream_url");
         return;
       }
@@ -2516,43 +2591,119 @@ function initStreamPlayer() {
   });
 }
 
+// ---- Multi-candidate stream loader with instant-failover ----
+// Builds an ordered list of candidate URLs for a user input and tries them in sequence.
+// If a candidate fails to start within a short window, it switches to the next one.
+function streamCandidates(inputUrl) {
+  const url = (inputUrl || "").trim();
+  if (!url) return [];
+
+  const ch = twitchChannelOf(url);
+  if (ch) {
+    // F1 / Twitch source: primary is the Twitch embed player; fallbacks are the raw
+    // source and the f1net dashboard (which itself loads Twitch + OpenF1).
+    const base = "twitch:" + ch;
+    return [
+      base,
+      "https://f1net1.dpdns.org/stream/fullhd1",
+      "https://www.twitch.tv/" + ch
+    ];
+  }
+
+  // Explicit HLS/MP4/DASH: just that one source.
+  return [url];
+}
+
 function loadStream(url) {
   const video = $("streamVideo");
   if (!video || !url) return;
-  const statusEl = $("streamStatus");
-  if (statusEl) statusEl.textContent = "Connecting to stream…";
 
-  if (hlsInstance) {
-    hlsInstance.destroy();
-    hlsInstance = null;
+  // If a previous run is still pending, cancel its timeout so it doesn't clobber the new run.
+  if (loadStream._timer) { clearTimeout(loadStream._timer); loadStream._timer = null; }
+  if (loadStream._attempt) { loadStream._attempt = 0; }
+
+  clearTwitchPlayer();
+  if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
+  video.pause(); video.removeAttribute("src"); video.load();
+
+  const candidates = streamCandidates(url);
+  setStreamStatus("Connecting to stream…");
+  showVpnHint(isF1Source(url) || /^twitch:/i.test(url.trim()));
+
+  if (!candidates.length) {
+    setStreamStatus("Invalid stream URL", "err");
+    return;
   }
 
-  const isHls = url.includes(".m3u8") || url.includes("application/x-mpegURL");
-  if (isHls && window.Hls && Hls.isSupported()) {
-    hlsInstance = new Hls({ enableWorker: true, lowLatencyMode: true });
-    hlsInstance.loadSource(url);
-    hlsInstance.attachMedia(video);
-    hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
-      if (statusEl) statusEl.textContent = "LIVE HLS STREAM";
-      video.play().catch(() => {});
-    });
-    hlsInstance.on(Hls.Events.ERROR, (_, data) => {
-      if (data.fatal) {
-        if (statusEl) statusEl.textContent = "Stream error (" + data.type + ")";
+  let idx = 0;
+  const attempt = () => {
+    if (idx >= candidates.length) {
+      setStreamStatus("All stream sources failed", "err");
+      showVpnHint(/twitch:/i.test(candidates.join(" ")) || F1_STREAM_HOSTS.some(h => candidates.join(" ").includes(h)));
+      return;
+    }
+    const c = candidates[idx++];
+    loadStream._attempt = idx;
+
+    if (/^twitch:/i.test(c)) {
+      const ch = c.slice(7);
+      if (loadTwitchPlayer(ch)) {
+        // Twitch iframe has no reliable "instant fail" signal; treat as loaded.
+        setStreamStatus("F1 LIVE (Twitch) · geo-gated", "warn");
+        return;
       }
-    });
-  } else if (video.canPlayType("application/vnd.apple.mpegurl") || !isHls) {
-    video.src = url;
-    video.addEventListener("loadedmetadata", () => {
-      if (statusEl) statusEl.textContent = isHls ? "LIVE HLS (Native)" : "PLAYING VIDEO";
-      video.play().catch(() => {});
-    }, { once: true });
+      return attempt();
+    }
+
+    // Native/HLS path for the current candidate.
+    const isHls = c.includes(".m3u8") || c.includes("application/x-mpegURL");
+    let settled = false;
+    const finishOk = () => { if (settled) return; settled = true; if (loadStream._timer) { clearTimeout(loadStream._timer); loadStream._timer = null; } };
+    const fail = (msg) => {
+      if (settled) return;
+      settled = true;
+      if (loadStream._timer) { clearTimeout(loadStream._timer); loadStream._timer = null; }
+      if (loadStream._attempt !== idx) return; // superseded by a newer loadStream call
+      setStreamStatus(msg, "err");
+      // Instant-failover: try the next candidate.
+      attempt();
+    };
+
+    // Watch for a quick signal: either playback starts (ok) or it errors within the timeout.
+    const timeout = 6000;
+    loadStream._timer = setTimeout(() => { if (!settled) fail("Timed out waiting for stream"); }, timeout);
+
+    video.addEventListener("loadedmetadata", () => { finishOk(); setStreamStatus(isHls ? "LIVE HLS (Native)" : "PLAYING VIDEO"); video.play().catch(() => {}); }, { once: true });
+    video.addEventListener("playing", () => { finishOk(); }, { once: true });
     video.addEventListener("error", () => {
-      if (statusEl) statusEl.textContent = "Unable to load stream";
+      const code = video.error ? video.error.code : "";
+      fail("Unable to load stream (error " + code + ")");
     }, { once: true });
-  } else {
-    if (statusEl) statusEl.textContent = "HLS not supported in this browser";
-  }
+
+    if (isHls && window.Hls && Hls.isSupported()) {
+      hlsInstance = new Hls({ enableWorker: true, lowLatencyMode: true });
+      hlsInstance.loadSource(c);
+      hlsInstance.attachMedia(video);
+      hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => { finishOk(); setStreamStatus("LIVE HLS STREAM"); video.play().catch(() => {}); });
+      hlsInstance.on(Hls.Events.MANIFEST_PARSING_ERROR, () => fail("HLS manifest could not be parsed"));
+      hlsInstance.on(Hls.Events.ERROR, (_, data) => {
+        if (data.fatal) {
+          if (data.details === "manifestLoadError" || data.details === "manifestParseError" || data.type === "networkError") {
+            fail("Fatal error: unable to load stream manifest");
+          } else {
+            fail("Stream error (" + data.type + ")");
+          }
+        }
+      });
+    } else if (video.canPlayType("application/vnd.apple.mpegurl") || !isHls) {
+      video.src = c;
+      video.load();
+    } else {
+      fail("HLS not supported in this browser");
+    }
+  };
+
+  attempt();
 }
 
 // ---------- Tyre Degradation Model & Stint Pace ----------
